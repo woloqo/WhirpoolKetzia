@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import { FileText, ArrowLeft, Play, CheckCircle2, Circle } from 'lucide-react';
 import Link from 'next/link';
 import { use } from 'react';
+import { ProgressBar } from '@/components/ProgressBar';
 
 export default function CursoDetalle(props) {
   const params = use(props.params);
   const id = params.id;
 
-  const [datos, setDatos] = useState({ curso: null, archivos: [], esCompletado: false });
+  const [datos, setDatos] = useState({ curso: null, archivos: [], esCompletado: false, porcentaje: 0});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDatos = async () => {
-      // 1. OBTENEMOS EL ID DEL LOCALSTORAGE
       const usuarioId = localStorage.getItem('usuario_id');
       
       if (!usuarioId) {
@@ -23,7 +23,6 @@ export default function CursoDetalle(props) {
       }
 
       try {
-        // 2. PEDIMOS LOS DATOS A UNA API (Necesitarás crear esta ruta)
         const res = await fetch(`/api/cursos/detalle?curso_id=${id}&usuario_id=${usuarioId}`);
         const data = await res.json();
         setDatos(data);
@@ -40,14 +39,13 @@ export default function CursoDetalle(props) {
   if (loading) return <div className="p-20 text-center">Cargando progreso personal...</div>;
   if (!datos.curso) return <div className="p-20 text-center">Curso no encontrado</div>;
 
-  const { curso, archivos, esCompletado } = datos;
+  const { curso, archivos, esCompletado, porcentaje} = datos;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen p-4">
         {/* Banner de "Volver" */}
         <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-800 mb-8 transition-colors">
-          <ArrowLeft size={20} /> Volver al Dashboard
+          <ArrowLeft size={16} /> Volver al Dashboard
         </Link>
 
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 mb-8 relative overflow-hidden">
@@ -55,10 +53,9 @@ export default function CursoDetalle(props) {
             <img src={curso.imagenSrc} className="w-full md:w-64 h-48 object-cover rounded-2xl" alt={curso.titulo} />
             <div className="flex-1">
               <h1 className="text-3xl font-black text-slate-900 mb-2">{curso.titulo}</h1>
-              <p className="text-slate-600 mb-6">{curso.descripcion}</p>
-              <button className={`px-6 py-3 rounded-xl font-bold ${esCompletado ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white'}`}>
-                {esCompletado ? 'Curso Terminado ✓' : 'Continuar Aprendiendo'}
-              </button>
+              <p className="text-slate-600 mb-4 pl-4">Creado por: {curso.nombre_autor}</p>      
+              <p className="text-slate-600 mb-4">{curso.descripcion}</p>      
+              <ProgressBar porcentaje={porcentaje}/>
             </div>
           </div>
         </div>
@@ -83,7 +80,6 @@ export default function CursoDetalle(props) {
             </Link>
           ))}
         </div>
-      </div>
     </div>
   );
 }

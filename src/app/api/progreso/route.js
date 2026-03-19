@@ -46,9 +46,14 @@ export async function POST(request) {
       completado = true;
     }
 
+    const porcentaje = totalArchivos > 0 
+    ? Math.round((archivosVistos / totalArchivos) * 100) 
+    : 0;
+
     return NextResponse.json({ 
       completado, 
-      progreso: `${archivosVistos}/${totalArchivos}` 
+      progreso: `${archivosVistos}/${totalArchivos}` ,
+      porcentaje
     });
 
   } catch (error) {

@@ -62,16 +62,9 @@ export default function Page() {
 
   return (
     <div className="flex-1 flex flex-col items-start justify-start p-10 w-full">
-      <header className="mb-10">
-        <div className="flex gap-2 mb-2">
-           <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-             Portal de Capacitación
-           </span>
-        </div>
-        
-        {/* Aquí está el mensaje personalizado */}
+      <header className="">        
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-          {obtenerSaludo()}, {nombreUsuario || 'Empleado'}
+          {obtenerSaludo()} {nombreUsuario || 'empleado'}.
         </h1>
         
         <p className="text-slate-500 mt-3 text-lg font-medium">

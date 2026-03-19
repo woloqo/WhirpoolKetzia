@@ -51,15 +51,63 @@ export default function VisorMaterial(props) {
     cargarArchivo();
   }, [archivo_id, curso_id]);
 
+  const obtenerEmbedUrl = (url) => {
+    if (!url) return null;
+
+    // 1. Extraer el ID usando una expresión regular
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+
+    const videoId = (match && match[2].length === 11) ? match[2] : null;
+
+    // 2. Retornar el formato embed de YouTube
+    return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : null;
+  };
+
   if (loading) return <div className="p-10 text-center bg-slate-900 text-white h-screen">Cargando material...</div>;
   if (!archivo) return <div className="p-10 text-center">Material no encontrado</div>;
 
+  const esYouTube = archivo.url_archivo.includes('youtube.com') || archivo.url_archivo.includes('youtu.be');
   const embedUrl = archivo.url_archivo.replace(/\/view.*/, '/preview');
 
-  return (
-    /* 1. El contenedor padre debe ocupar exactamente el espacio disponible 
-       y no permitir scroll externo */
-    <div className="h-[calc(100vh-160px)] flex flex-col bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 shadow-xl">
+  if(esYouTube) return (
+    <div className="h-screen w-full flex flex-col bg-slate-900 overflow-hidden border border-slate-200 shadow-xl">
+      
+      {/* 2. Barra superior del material (Header del Visor) 
+          'shrink-0' asegura que no se mueva ni se haga pequeña */}
+      <div className="shrink-0 p-4 bg-slate-800 flex justify-between items-center text-white z-40">
+        <div className="flex items-center gap-4">
+          <Link href={`/cursos/${curso_id}`} className="hover:text-blue-400 transition-colors">
+            <ArrowLeft size={24} />
+          </Link>
+          <div>
+            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest leading-none mb-1">
+              {archivo.curso_titulo}
+            </p>
+            <h1 className="text-sm font-bold truncate max-w-[200px] md:max-w-md">
+              {archivo.nombre_archivo}
+            </h1>
+          </div>
+        </div>
+        <a 
+          href={archivo.url_archivo} 
+          target="_blank" 
+          className="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+        >
+          <ExternalLink size={14} className="inline mr-1" /> Abrir
+        </a>
+      </div>
+
+      <div className="flex-1 w-full bg-white relative">
+        <iframe className="absolute top-0 left-0 w-full h-full border-0" src={obtenerEmbedUrl(archivo.url_archivo)} title="YouTube video player" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+        allowFullScreen></iframe>
+      </div>
+
+    </div>
+  );
+  else return (
+    <div className="h-screen w-full flex flex-col bg-slate-900 overflow-hidden border border-slate-200 shadow-xl">
       
       {/* 2. Barra superior del material (Header del Visor) 
           'shrink-0' asegura que no se mueva ni se haga pequeña */}

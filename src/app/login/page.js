@@ -27,6 +27,7 @@ export default function LoginPage() {
       if (res.ok) {
         // Guardamos el ID en el navegador del empleado
         localStorage.setItem('usuario_id', data.usuario_id);
+        localStorage.setItem('rol_id', data.rol_id);
         // Redirigimos al Dashboard
         router.push('/');
         router.refresh(); 

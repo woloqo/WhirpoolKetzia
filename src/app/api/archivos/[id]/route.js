@@ -2,7 +2,6 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
-  // 1. SOLUCIÓN AL ERROR DE PARAMS: Debemos esperar a que se resuelvan
   const { id } = await params; 
 
   try {
@@ -10,10 +9,7 @@ export async function GET(request, { params }) {
       'SELECT a.*, c.titulo as curso_titulo FROM Archivos_Curso a JOIN Cursos c ON a.curso_id = c.curso_id WHERE a.archivo_id = ?',
       [id]
     );
-
-    // 2. SOLUCIÓN AL SERIALIZABLE: Verificamos si existe y mandamos un objeto limpio
     if (rows && rows.length > 0) {
-      // Convertimos a objeto plano para evitar problemas de serialización
       const archivo = JSON.parse(JSON.stringify(rows[0]));
       return NextResponse.json(archivo);
     }
