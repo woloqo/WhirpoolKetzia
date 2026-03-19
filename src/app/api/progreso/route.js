@@ -9,10 +9,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
     }
 
-    // 1. Registrar el archivo como visto
+    // 1. Registrar el archivo como visto ESPECÍFICO para este curso
+    // Agregamos curso_id a la inserción
     await pool.query(
-      'INSERT IGNORE INTO Archivos_Vistos (usuario_id, archivo_id) VALUES (?, ?)',
-      [usuario_id, archivo_id]
+      'INSERT IGNORE INTO Archivos_Vistos (usuario_id, curso_id, archivo_id) VALUES (?, ?, ?)',
+      [usuario_id, curso_id, archivo_id]
     );
 
     // 2. Obtener el total de archivos que tiene este curso
@@ -22,21 +23,22 @@ export async function POST(request) {
     );
     const totalArchivos = totalRows[0].total;
 
-    // 3. Contar cuántos archivos distintos ha visto el usuario en este curso
-    const [vistosRows] = await pool.query(`
-      SELECT COUNT(DISTINCT av.archivo_id) as vistos
-      FROM Archivos_Vistos av
-      JOIN Archivos_Curso ac ON av.archivo_id = ac.archivo_id
-      WHERE av.usuario_id = ? AND ac.curso_id = ?`,
+    // 3. Contar cuántos archivos ha visto el usuario EN ESTE CURSO
+    // Ahora filtramos directamente en Archivos_Vistos por el curso_id
+    const [vistosRows] = await pool.query(
+      'SELECT COUNT(*) as vistos FROM Archivos_Vistos WHERE usuario_id = ? AND curso_id = ?',
       [usuario_id, curso_id]
     );
     const archivosVistos = vistosRows[0].vistos;
 
-    // --- NUEVA LÓGICA DE QUIZ ---
+    // --- LÓGICA DE QUIZ ---
     
-    // 4. Verificar si el curso tiene un Quiz y si el usuario lo aprobó
+    // 4. Verificar si el curso tiene Quizzes asociados (Tabla Quiz_Curso)
     const [quizRows] = await pool.query(
-      'SELECT quiz_id, puntos_minimos FROM Quizzes WHERE curso_id = ?',
+      `SELECT q.quiz_id, q.puntos_minimos 
+       FROM Quiz_Curso qc
+       JOIN Quizzes q ON qc.quiz_id = q.quiz_id
+       WHERE qc.curso_id = ?`,
       [curso_id]
     );
 
@@ -44,6 +46,8 @@ export async function POST(request) {
     let quizAprobado = false;
 
     if (tieneQuiz) {
+      // Verificamos si aprobó AL MENOS uno de los quizzes requeridos para este curso
+      // O si prefieres, puedes ajustar esta lógica para que requiera TODOS los quizzes
       const quiz = quizRows[0];
       const [intentoRows] = await pool.query(
         `SELECT calificacion FROM Intentos_Quiz 
@@ -57,16 +61,14 @@ export async function POST(request) {
 
     // --- FIN LÓGICA DE QUIZ ---
 
-    let completado = false;
     const archivosTerminados = totalArchivos > 0 && archivosVistos >= totalArchivos;
 
     // 5. Lógica de completado final:
-    // Si tiene quiz, necesita archivos + quiz aprobado.
-    // Si NO tiene quiz, solo necesita los archivos.
     const puedeCompletar = tieneQuiz 
       ? (archivosTerminados && quizAprobado) 
       : archivosTerminados;
 
+    let completado = false;
     if (puedeCompletar) {
       await pool.query(`
         INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)
@@ -86,7 +88,7 @@ export async function POST(request) {
       completado, 
       progreso: `${archivosVistos}/${totalArchivos}`,
       porcentaje,
-      necesitaQuiz: tieneQuiz && !quizAprobado // Informamos al frontend si falta el examen
+      necesitaQuiz: tieneQuiz && !quizAprobado 
     });
 
   } catch (error) {

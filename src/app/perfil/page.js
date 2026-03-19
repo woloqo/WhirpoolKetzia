@@ -49,10 +49,6 @@ export default function PerfilPage() {
             </span>
           </div>
         </div>
-
-        <Link href="/" className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black hover:bg-blue-600 transition-all text-sm shadow-xl shadow-slate-200 hover:shadow-blue-100">
-          Panel de Control
-        </Link>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">

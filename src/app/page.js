@@ -20,6 +20,7 @@ export default function Page() {
 
   useEffect(() => {
     const usuarioId = localStorage.getItem('usuario_id');
+    const usuarioRolId = localStorage.getItem('rol_id')
 
     if (!usuarioId) {
       router.push('/login');

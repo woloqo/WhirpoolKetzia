@@ -5,17 +5,19 @@ export async function POST(request) {
   try {
     const { email } = await request.json();
 
-    // Buscamos si el correo existe en la tabla Usuarios
+    // CORRECCIÓN: Agregamos 'rol_id' a la consulta SELECT
     const [rows] = await pool.query(
-      'SELECT usuario_id FROM Usuarios WHERE email = ?', 
+      'SELECT usuario_id, rol_id FROM Usuarios WHERE email = ?', 
       [email]
     );
 
     if (rows.length > 0) {
-      // Si existe, regresamos el ID
-      return NextResponse.json({ usuario_id: rows[0].usuario_id });
+      // Ahora enviamos un objeto que contiene AMBOS valores
+      return NextResponse.json({ 
+        usuario_id: rows[0].usuario_id,
+        rol_id: rows[0].rol_id // <--- Esto es lo que le faltaba a tu Sidebar
+      });
     } else {
-      // Si no existe, mandamos un error 401
       return NextResponse.json({ message: 'Usuario no encontrado' }, { status: 401 });
     }
   } catch (error) {

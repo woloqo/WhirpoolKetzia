@@ -25,31 +25,36 @@ export async function GET(request) {
     const [items] = await pool.query(`
       -- PARTE 1: Archivos
       SELECT 
-        archivo_id AS id_contenido,
-        nombre_archivo AS titulo,
+        a.archivo_id AS id_contenido,
+        a.nombre_archivo AS titulo,
         'archivo' AS tipo,
-        orden,
+        ac.orden,
         (SELECT COUNT(*) FROM Archivos_Vistos av 
-        WHERE av.archivo_id = ac.archivo_id AND av.usuario_id = ?) AS completado
+        WHERE av.archivo_id = a.archivo_id 
+        AND av.usuario_id = ? 
+        AND av.curso_id = ?) AS completado -- <--- FILTRO POR CURSO AÑADIDO
       FROM Archivos_Curso ac
-      WHERE curso_id = ?
+      JOIN Archivos a ON ac.archivo_id = a.archivo_id
+      WHERE ac.curso_id = ?
 
       UNION ALL
 
-      -- PARTE 2: Quizzes
+      -- PARTE 2: Quizzes (Este se mantiene igual ya que Quizzes_Completados ya tiene curso_id)
       SELECT 
         q.quiz_id AS id_contenido,
         q.titulo AS titulo,
         'quiz' AS tipo,
         qc.orden,
         (SELECT COUNT(*) FROM Quizzes_Completados qc_comp 
-        WHERE qc_comp.quiz_id = q.quiz_id AND qc_comp.usuario_id = ?) AS completado
+        WHERE qc_comp.quiz_id = q.quiz_id 
+        AND qc_comp.usuario_id = ? 
+        AND qc_comp.curso_id = ?) AS completado
       FROM Quiz_Curso qc
       JOIN Quizzes q ON qc.quiz_id = q.quiz_id
       WHERE qc.curso_id = ?
 
       ORDER BY orden ASC
-    `, [usuario_id, curso_id, usuario_id, curso_id]);
+    `, [usuario_id, curso_id, curso_id, usuario_id, curso_id, curso_id]); 
 
     // 3. Cálculo de Progreso
     const totalItems = items.length;
@@ -57,10 +62,8 @@ export async function GET(request) {
     const porcentaje = totalItems > 0 ? Math.round((completadosCount / totalItems) * 100) : 0;
     const esCompletadoReal = porcentaje === 100 && totalItems > 0;
 
-    // --- NUEVA LÓGICA DE INSERCIÓN EN COMPLETACIONES ---
+    // 4. Inserción automática en Completaciones si aplica
     if (esCompletadoReal) {
-      // Intentamos insertar en la tabla de completaciones oficial de Whirlpool
-      // Usamos INSERT IGNORE para que si ya existe, no tire error ni duplique
       await pool.query(`
         INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)
         SELECT ?, inscripcion_id, NOW() 
@@ -68,7 +71,6 @@ export async function GET(request) {
         WHERE usuario_id = ? AND curso_id = ?
       `, [usuario_id, usuario_id, curso_id]);
     }
-    // ---------------------------------------------------
 
     return NextResponse.json({
       curso: cursoRows[0],
