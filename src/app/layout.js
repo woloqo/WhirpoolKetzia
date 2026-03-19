@@ -12,20 +12,23 @@ export default function RootLayout({ children }) {
   const configRutas = {
     isLogin: pathname === '/login',
     isVisor: pathname.includes('/visor/'),
+    isComunidad: pathname === '/comunidad',
+    isProfile: pathname === '/perfil'
   };
 
   // 2. Lógica de componentes
-  const mostrarSidebar = !configRutas.isLogin; // El sidebar se muestra en el visor, pero colapsado
+  const mostrarSidebar = !configRutas.isLogin; 
   const mostrarHeader = !configRutas.isLogin && !configRutas.isVisor;
+  const colapsarSidebar = configRutas.isComunidad || configRutas.isVisor || configRutas.isProfile;
   
   // 3. Clases dinámicas para el Sidebar y el Contenedor
-  const anchoSidebar = configRutas.isVisor ? 'lg:ml-16' : 'lg:ml-32';
-  const margenMain = mostrarSidebar ? `${anchoSidebar} pb-16 lg:pb-0` : '';
+  const anchoSidebar = configRutas.isVisor || configRutas.isComunidad || configRutas.isProfile ? 'lg:ml-20' : 'lg:ml-32';
+  const margenMain = mostrarSidebar ? `${anchoSidebar} pb-2 lg:pb-0` : '';
 
   return (
     <html lang="es">
       <body className="bg-slate-50 antialiased overflow-x-hidden"> 
-        {mostrarSidebar && <Sidebar colapsado={configRutas.isVisor} />}
+        {mostrarSidebar && <Sidebar colapsado={colapsarSidebar} />}
 
         <div className={`min-h-screen flex flex-col transition-all duration-500 ease-in-out ${margenMain}`}>
           

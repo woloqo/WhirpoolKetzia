@@ -72,9 +72,6 @@ export default function VisorMaterial(props) {
 
   if(esYouTube) return (
     <div className="h-screen w-full flex flex-col bg-slate-900 overflow-hidden border border-slate-200 shadow-xl">
-      
-      {/* 2. Barra superior del material (Header del Visor) 
-          'shrink-0' asegura que no se mueva ni se haga pequeña */}
       <div className="shrink-0 p-4 bg-slate-800 flex justify-between items-center text-white z-40">
         <div className="flex items-center gap-4">
           <Link href={`/cursos/${curso_id}`} className="hover:text-blue-400 transition-colors">
@@ -101,16 +98,13 @@ export default function VisorMaterial(props) {
       <div className="flex-1 w-full bg-white relative">
         <iframe className="absolute top-0 left-0 w-full h-full border-0" src={obtenerEmbedUrl(archivo.url_archivo)} title="YouTube video player" 
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-        allowFullScreen></iframe>
+        allowFullcreen></iframe>
       </div>
 
     </div>
   );
   else return (
     <div className="h-screen w-full flex flex-col bg-slate-900 overflow-hidden border border-slate-200 shadow-xl">
-      
-      {/* 2. Barra superior del material (Header del Visor) 
-          'shrink-0' asegura que no se mueva ni se haga pequeña */}
       <div className="shrink-0 p-4 bg-slate-800 flex justify-between items-center text-white z-40">
         <div className="flex items-center gap-4">
           <Link href={`/cursos/${curso_id}`} className="hover:text-blue-400 transition-colors">

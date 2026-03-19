@@ -20,7 +20,7 @@ export async function POST(request) {
       'SELECT COUNT(*) as total FROM Archivos_Curso WHERE curso_id = ?',
       [curso_id]
     );
-    const totalArchivos = totalRows[0].total; // <--- AQUÍ SE DEFINE LA VARIABLE
+    const totalArchivos = totalRows[0].total;
 
     // 3. Contar cuántos archivos distintos ha visto el usuario en este curso
     const [vistosRows] = await pool.query(`
@@ -32,10 +32,42 @@ export async function POST(request) {
     );
     const archivosVistos = vistosRows[0].vistos;
 
-    let completado = false;
+    // --- NUEVA LÓGICA DE QUIZ ---
+    
+    // 4. Verificar si el curso tiene un Quiz y si el usuario lo aprobó
+    const [quizRows] = await pool.query(
+      'SELECT quiz_id, puntos_minimos FROM Quizzes WHERE curso_id = ?',
+      [curso_id]
+    );
 
-    // 4. Lógica de completado con la nueva tabla que incluye usuario_id
-    if (totalArchivos > 0 && archivosVistos >= totalArchivos) {
+    let tieneQuiz = quizRows.length > 0;
+    let quizAprobado = false;
+
+    if (tieneQuiz) {
+      const quiz = quizRows[0];
+      const [intentoRows] = await pool.query(
+        `SELECT calificacion FROM Intentos_Quiz 
+         WHERE usuario_id = ? AND quiz_id = ? 
+         AND calificacion >= ? 
+         ORDER BY calificacion DESC LIMIT 1`,
+        [usuario_id, quiz.quiz_id, quiz.puntos_minimos]
+      );
+      if (intentoRows.length > 0) quizAprobado = true;
+    }
+
+    // --- FIN LÓGICA DE QUIZ ---
+
+    let completado = false;
+    const archivosTerminados = totalArchivos > 0 && archivosVistos >= totalArchivos;
+
+    // 5. Lógica de completado final:
+    // Si tiene quiz, necesita archivos + quiz aprobado.
+    // Si NO tiene quiz, solo necesita los archivos.
+    const puedeCompletar = tieneQuiz 
+      ? (archivosTerminados && quizAprobado) 
+      : archivosTerminados;
+
+    if (puedeCompletar) {
       await pool.query(`
         INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)
         SELECT ?, inscripcion_id, NOW() 
@@ -47,13 +79,14 @@ export async function POST(request) {
     }
 
     const porcentaje = totalArchivos > 0 
-    ? Math.round((archivosVistos / totalArchivos) * 100) 
-    : 0;
+      ? Math.round((archivosVistos / totalArchivos) * 100) 
+      : 0;
 
     return NextResponse.json({ 
       completado, 
-      progreso: `${archivosVistos}/${totalArchivos}` ,
-      porcentaje
+      progreso: `${archivosVistos}/${totalArchivos}`,
+      porcentaje,
+      necesitaQuiz: tieneQuiz && !quizAprobado // Informamos al frontend si falta el examen
     });
 
   } catch (error) {
