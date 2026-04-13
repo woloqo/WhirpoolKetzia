@@ -68,7 +68,7 @@ export default function QuizPage(props) {
 
   // Pantalla de Resultados
   if (resultado) {
-    const aprobado = resultado.calificacion >= quiz.puntos_minimos;
+    const aprobado = resultado.aprobado;
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
         <div className="max-w-md w-full bg-white rounded-[3rem] p-10 shadow-xl text-center border border-slate-100">
@@ -78,7 +78,7 @@ export default function QuizPage(props) {
           <h2 className="text-3xl font-black text-slate-900 mb-2">
             {aprobado ? '¡Excelente Trabajo!' : 'Puedes Mejorar'}
           </h2>
-          <p className="text-slate-500 font-bold text-lg mb-8">Tu calificación: {resultado.calificacion}%</p>
+          <p className="text-slate-500 font-bold text-lg mb-8">Tu calificación: {resultado.calificacion ?? 0}%</p>
           
           <div className="space-y-3">
             <Link href={`/cursos/${curso_id}`} className="block w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition-all">
