@@ -20,13 +20,11 @@ export default function PostForm({
   const [formData, setFormData] = useState(initialFormState);
   const [enviando, setEnviando] = useState(false);
   
-  // --- LÓGICA DE GEMAS ---
   const [misGemas, setMisGemas] = useState([]);
   const [gemaSeleccionada, setGemaSeleccionada] = useState(null);
   const [cargandoGemas, setCargandoGemas] = useState(false);
   const [showGemaPicker, setShowGemaPicker] = useState(false);
 
-  // Verificamos si estamos en comunidad para mostrar el selector
   const esComunidad = apiUrl?.includes('comunidad');
 
   useEffect(() => {
@@ -110,17 +108,28 @@ export default function PostForm({
       {esComunidad && (
         <div className="space-y-3">
           {!gemaSeleccionada ? (
-            <button
-              type="button"
-              onClick={() => setShowGemaPicker(!showGemaPicker)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter text-blue-600 hover:text-blue-700 transition-colors py-1"
-            >
-              <Gem size={14} /> {showGemaPicker ? "Cerrar selección" : "Adjuntar una gema"}
-            </button>
+            <div className="flex items-center justify-between">
+  <button
+    type="button"
+    onClick={() => setShowGemaPicker(!showGemaPicker)}
+    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter text-blue-600 hover:text-blue-700 transition-colors py-1"
+  >
+    <Gem size={14} /> {showGemaPicker ? "Cerrar selección" : "Adjuntar una gema"}
+  </button>
+  
+  <a
+    href="/perfil"
+    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tighter text-slate-400 hover:text-blue-600 transition-colors py-1"
+  >
+    <Gem size={12} /> Nueva gema
+  </a>
+</div>
           ) : (
             <div className="flex items-center justify-between p-3 bg-blue-50/50 border border-blue-100 rounded-xl animate-in zoom-in-95 duration-200">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm border border-blue-50"><Gem size={16} /></div>
+                <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm border border-blue-50">
+                  <Gem size={16} />
+                </div>
                 <div>
                   <p className="text-[9px] font-black text-blue-400 uppercase leading-none mb-1">Gema adjunta</p>
                   <p className="text-sm font-bold text-slate-800 line-clamp-1">{gemaSeleccionada.titulo}</p>
@@ -139,7 +148,9 @@ export default function PostForm({
           {showGemaPicker && !gemaSeleccionada && (
             <div className="grid grid-cols-1 gap-1 max-h-44 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
               {cargandoGemas ? (
-                <div className="py-4 flex justify-center"><Loader2 className="animate-spin text-slate-300" size={20} /></div>
+                <div className="py-4 flex justify-center">
+                  <Loader2 className="animate-spin text-slate-300" size={20} />
+                </div>
               ) : misGemas.length > 0 ? (
                 misGemas.map(g => (
                   <button
@@ -153,7 +164,18 @@ export default function PostForm({
                   </button>
                 ))
               ) : (
-                <p className="text-[10px] text-center text-slate-400 py-4 font-bold uppercase italic tracking-widest">No tienes gemas disponibles</p>
+                <div className="py-4 text-center space-y-2">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase italic tracking-widest">
+                    No tienes gemas disponibles
+                  </p>
+                  
+                  <a
+                    href="/perfil"
+                    className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <Gem size={12} /> Crear mi primera gema
+                  </a>
+                </div>
               )}
             </div>
           )}
