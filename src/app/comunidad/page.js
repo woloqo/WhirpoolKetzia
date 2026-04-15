@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   MessageSquare, Loader2, Users, ChevronDown, ChevronUp, 
-  Plus, X, Send, Heart, Gem, Pencil, Trash2, Check 
+  Plus, X, Send, Heart, Gem, Pencil, Trash2, Check, Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
@@ -19,15 +19,18 @@ export default function ComunidadPage() {
   const limit = 5;
   const isFetching = useRef(false);
 
+  const [busquedaUsuario, setBusquedaUsuario] = useState('');
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showMobileForm, setShowMobileForm] = useState(false);
   const [comentandoId, setComentandoId] = useState(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [comentariosVisibles, setComentariosVisibles] = useState({});
 
-  // Estados de edición
-  const [editandoPost, setEditandoPost] = useState(null); // {id, titulo, contenido}
-  const [editandoComentario, setEditandoComentario] = useState(null); // {id, contenido}
+  const [editandoPost, setEditandoPost] = useState(null);
+  const [editandoComentario, setEditandoComentario] = useState(null);
 
   useEffect(() => {
     const uid = localStorage.getItem('usuario_id');
@@ -78,7 +81,35 @@ export default function ComunidadPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [fetchPosts]);
 
-  // --- LÓGICA DE PUBLICACIONES ---
+  useEffect(() => {
+  if (busquedaUsuario.trim().length < 2) {
+    setResultadosBusqueda([]);
+    return;
+  }
+  const timer = setTimeout(async () => {
+    setBuscando(true);
+    try {
+      const res = await fetch(`/api/usuario/buscar?q=${busquedaUsuario}`);
+      const data = await res.json();
+
+      // Búsqueda fonética con Fuse.js
+      const Fuse = (await import('fuse.js')).default;
+      const fuse = new Fuse(data, {
+        keys: ['nombre', 'alias'],
+        threshold: 0.4,
+        ignoreLocation: true,
+      });
+
+      const resultados = fuse.search(busquedaUsuario).map(r => r.item);
+      setResultadosBusqueda(resultados.length > 0 ? resultados : data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBuscando(false);
+    }
+  }, 400);
+  return () => clearTimeout(timer);
+}, [busquedaUsuario]);
 
   const eliminarPost = async (id) => {
     if (!window.confirm("¿Eliminar publicación permanentemente?")) return;
@@ -104,8 +135,6 @@ export default function ComunidadPage() {
       setEditandoPost(null);
     }
   };
-
-  // --- LÓGICA DE COMENTARIOS ---
 
   const handleCommentSubmit = async (e, publicId) => {
     e.preventDefault();
@@ -198,6 +227,8 @@ export default function ComunidadPage() {
       <PageHeader title="Comunidad Whirlpool" subtitle="Comparte tus dudas y avances con el equipo" icon={Users} />
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
+        
+        {/* COLUMNA PRINCIPAL */}
         <div className="w-full lg:w-2/3 space-y-8">
           {loading ? (
             <div className="text-center p-20"><Loader2 className="animate-spin mx-auto text-blue-600" size={32} /></div>
@@ -330,10 +361,61 @@ export default function ComunidadPage() {
           {loadingMore && <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>}
         </div>
 
+        {/* ASIDE DERECHO */}
         <aside className="hidden lg:block lg:w-1/3 lg:sticky lg:top-10 space-y-6">
+          
+          {/* Nueva Publicación */}
           <SectionCard title="Nueva Publicación">
             <PostForm fields={comunidadFields} apiUrl="/api/comunidad" buttonText="Publicar Ahora" extraData={{ usuario_id: currentUserId }} onSuccess={() => { setHasMore(true); fetchPosts(true); }} />
           </SectionCard>
+
+          {/* Buscador de usuarios */}
+          <SectionCard title="Buscar Usuarios">
+            <div className="p-4 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o alias..."
+                  value={busquedaUsuario}
+                  onChange={(e) => setBusquedaUsuario(e.target.value)}
+                  className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                />
+                {buscando && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 animate-spin" size={14} />}
+              </div>
+
+              {resultadosBusqueda.length > 0 && (
+                <div className="space-y-2">
+                  {resultadosBusqueda.map(u => (
+                    <Link
+                      key={u.usuario_id}
+                      href={String(u.usuario_id) === String(currentUserId) ? '/perfil' : `/perfil/${u.usuario_id}`}
+                      className="flex items-center gap-3 p-3 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 rounded-2xl transition-all group"
+                    >
+                      <div className="w-9 h-9 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-black text-sm overflow-hidden shrink-0">
+                        {u.pfp ? <img src={u.pfp} className="w-full h-full object-cover" alt="" /> : u.nombre?.[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-slate-900 text-sm truncate group-hover:text-blue-600 transition-colors">
+                          {u.alias || u.nombre}
+                        </p>
+                        {u.alias && <p className="text-[10px] text-slate-400 font-medium truncate">{u.nombre}</p>}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {busquedaUsuario.trim().length >= 2 && !buscando && resultadosBusqueda.length === 0 && (
+                <p className="text-slate-400 text-xs font-bold text-center py-4">No se encontraron usuarios</p>
+              )}
+
+              {busquedaUsuario.trim().length < 2 && busquedaUsuario.trim().length > 0 && (
+                <p className="text-slate-300 text-xs font-bold text-center py-2">Escribe al menos 2 caracteres</p>
+              )}
+            </div>
+          </SectionCard>
+
         </aside>
       </div>
     </div>
