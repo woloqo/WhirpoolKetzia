@@ -15,6 +15,9 @@ export default function NuevoCurso() {
   const [archivosDisponibles, setArchivosDisponibles] = useState([]);
   const [quizzesDisponibles, setQuizzesDisponibles] = useState([]);
   const [filtroBiblioteca, setFiltroBiblioteca] = useState('');
+  const [alumnosDisponibles, setAlumnosDisponibles] = useState([]);
+const [alumnosSeleccionados, setAlumnosSeleccionados] = useState([]);
+const [filtroAlumnos, setFiltroAlumnos] = useState('');
   
   // Inicializamos previewUrl con la imagen default
   const [previewUrl, setPreviewUrl] = useState(DEFAULT_COURSE_IMAGE);
@@ -41,6 +44,11 @@ export default function NuevoCurso() {
       .then(res => res.json())
       .then(data => setQuizzesDisponibles(Array.isArray(data) ? data : []))
       .catch(() => setQuizzesDisponibles([]));
+
+    fetch('/api/admin/usuarios')
+      .then(res => res.json())
+      .then(data => setAlumnosDisponibles(Array.isArray(data) ? data : []))
+      .catch(() => setAlumnosDisponibles([]));
   }, [router]);
 
   const handleImageChange = (e) => {
@@ -116,7 +124,8 @@ export default function NuevoCurso() {
         body: JSON.stringify({ 
           ...formData, 
           imagenSrc: finalImageUrl, 
-          creado_por: usuario_id 
+          creado_por: usuario_id ,
+          alumnosSeleccionados
         }),
       });
 
@@ -315,7 +324,77 @@ export default function NuevoCurso() {
                   ))}
               </div>
             </div>
+            {/* ALUMNOS */}
+<div className="mb-8">
+  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">
+    Alumnos a inscribir
+  </p>
+  
+  {/* Buscador */}
+  <div className="relative mb-3">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+    <input
+      type="text"
+      placeholder="Buscar alumno..."
+      className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+      onChange={(e) => setFiltroAlumnos(e.target.value)}
+    />
+  </div>
 
+  {/* Lista de alumnos disponibles */}
+  <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+    {alumnosDisponibles
+      .filter(a => 
+        !alumnosSeleccionados.includes(a.value) &&
+        a.label.toLowerCase().includes(filtroAlumnos.toLowerCase())
+      )
+      .map(alumno => (
+        <button
+          key={alumno.value}
+          type="button"
+          onClick={() => setAlumnosSeleccionados([...alumnosSeleccionados, alumno.value])}
+          className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-emerald-600 hover:text-white rounded-xl transition-all group text-left"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-emerald-100 group-hover:bg-white/20 rounded-lg flex items-center justify-center font-black text-emerald-600 group-hover:text-white text-xs shrink-0">
+              {alumno.label?.[0]}
+            </div>
+            <span className="text-xs font-bold truncate">{alumno.label}</span>
+          </div>
+          <Plus size={14} className="text-slate-300 group-hover:text-white shrink-0" />
+        </button>
+      ))}
+  </div>
+
+  {/* Alumnos seleccionados */}
+  {alumnosSeleccionados.length > 0 && (
+    <div className="space-y-2">
+      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-1">
+        Seleccionados ({alumnosSeleccionados.length})
+      </p>
+      {alumnosSeleccionados.map(id => {
+        const alumno = alumnosDisponibles.find(a => a.value === id);
+        return (
+          <div key={id} className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-emerald-200 rounded-lg flex items-center justify-center font-black text-emerald-700 text-xs shrink-0">
+                {alumno?.label?.[0]}
+              </div>
+              <span className="text-xs font-bold text-emerald-800 truncate">{alumno?.label}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAlumnosSeleccionados(alumnosSeleccionados.filter(a => a !== id))}
+              className="p-1 text-emerald-400 hover:text-red-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
             <button 
               type="submit"
               disabled={loading}

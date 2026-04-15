@@ -24,7 +24,7 @@ export async function POST(request) {
   const connection = await pool.getConnection();
   
   try {
-    const { titulo, descripcion, descripcionCorta, imagenSrc, archivosSeleccionados, quizzesSeleccionados, creado_por } = await request.json();
+    const { titulo, descripcion, descripcionCorta, imagenSrc, archivosSeleccionados, quizzesSeleccionados, creado_por, alumnosSeleccionados } = await request.json();
 
     if (!titulo || !creado_por) {
       return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 });
@@ -32,14 +32,14 @@ export async function POST(request) {
 
     await connection.beginTransaction();
 
-    // 1. Insertar el curso incluyendo el nuevo campo descripcion_corta
+    // 1. Insertar el curso
     const [cursoResult] = await connection.query(
       `INSERT INTO Cursos (titulo, descripcion, descripcionCorta, imagenSrc, creado_por) VALUES (?, ?, ?, ?, ?)`,
       [titulo, descripcion, descripcionCorta, imagenSrc, creado_por]
     );
     const nuevoCursoId = cursoResult.insertId;
 
-    // 2. Vincular ARCHIVOS (Optimizado con inserción masiva)
+    // 2. Vincular ARCHIVOS
     if (archivosSeleccionados?.length > 0) {
       const valoresArchivos = archivosSeleccionados.map((id, index) => [nuevoCursoId, id, index + 1]);
       await connection.query(
@@ -48,13 +48,22 @@ export async function POST(request) {
       );
     }
 
-    // 3. Vincular QUIZZES (Optimizado con inserción masiva)
+    // 3. Vincular QUIZZES
     if (quizzesSeleccionados?.length > 0) {
       const offset = archivosSeleccionados?.length || 0;
       const valoresQuizzes = quizzesSeleccionados.map((id, index) => [nuevoCursoId, id, offset + index + 1]);
       await connection.query(
         `INSERT INTO Quiz_Curso (curso_id, quiz_id, orden) VALUES ?`,
         [valoresQuizzes]
+      );
+    }
+
+    // 4. Inscribir ALUMNOS
+    if (alumnosSeleccionados?.length > 0) {
+      const valoresAlumnos = alumnosSeleccionados.map(usuario_id => [usuario_id, nuevoCursoId]);
+      await connection.query(
+        `INSERT INTO Inscripciones (usuario_id, curso_id) VALUES ?`,
+        [valoresAlumnos]
       );
     }
 
