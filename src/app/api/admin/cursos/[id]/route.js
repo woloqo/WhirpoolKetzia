@@ -5,11 +5,11 @@ export async function PUT(request, { params }) {
   const { id } = await params;
 
   try {
-    const { titulo, descripcion, descripcionCorta, imagenSrc } = await request.json();
+    const { titulo, descripcion, descripcionCorta } = await request.json();
 
     await pool.query(
-      'UPDATE Cursos SET titulo = ?, descripcion = ?, descripcionCorta = ?, imagenSrc = ? WHERE curso_id = ?',
-      [titulo, descripcion, descripcionCorta, imagenSrc, id]
+      'UPDATE Cursos SET titulo = ?, descripcion = ?, descripcionCorta = ? WHERE curso_id = ?',
+      [titulo, descripcion, descripcionCorta, id]
     );
 
     return NextResponse.json({ success: true, message: 'Curso actualizado correctamente' });
