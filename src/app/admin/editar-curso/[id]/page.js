@@ -18,8 +18,12 @@ export default function EditarCurso({ params }) {
   const [descripcionCorta, setDescripcionCorta] = useState('');
   const [descripcion, setDescripcion] = useState('');
 
+  // Estado local de materiales y exámenes (no se guarda hasta presionar el botón)
   const [materiales, setMateriales] = useState([]);
   const [examenes, setExamenes] = useState([]);
+  const [materialesOriginales, setMaterialesOriginales] = useState([]);
+  const [examenesOriginales, setExamenesOriginales] = useState([]);
+
   const [todosMateriales, setTodosMateriales] = useState([]);
   const [todosExamenes, setTodosExamenes] = useState([]);
 
@@ -44,8 +48,13 @@ export default function EditarCurso({ params }) {
         setDescripcion(cursoActual.descripcion || '');
       }
 
-      setMateriales(await resMateriales.json());
-      setExamenes(await resExamenes.json());
+      const matsData = await resMateriales.json();
+      const exsData = await resExamenes.json();
+
+      setMateriales(matsData);
+      setMaterialesOriginales(matsData);
+      setExamenes(exsData);
+      setExamenesOriginales(exsData);
       setTodosMateriales(await resTodosMat.json());
       setTodosExamenes(await resTodosEx.json());
     } catch (err) {
@@ -59,17 +68,87 @@ export default function EditarCurso({ params }) {
 
   const handleSave = async () => {
     if (!titulo.trim()) return alert('El título no puede estar vacío');
+    
+    const confirmar = window.confirm('¿Guardar todos los cambios del curso?');
+    if (!confirmar) return;
+
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/cursos/${cursoId}`, {
+      // 1. Guardar info básica
+      await fetch(`/api/admin/cursos/${cursoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ titulo, descripcion, descripcionCorta }),
       });
-      if (res.ok) alert('Curso actualizado correctamente');
-      else alert('Error al actualizar el curso');
+
+      // 2. Sincronizar materiales — borrar los que se quitaron, agregar los nuevos
+      const idsOriginales = materialesOriginales.map(m => m.relacion_id);
+      const idsActuales = materiales.filter(m => m.relacion_id).map(m => m.relacion_id);
+
+      // Eliminar materiales quitados
+      for (const relacion_id of idsOriginales) {
+        if (!idsActuales.includes(relacion_id)) {
+          await fetch(`/api/admin/cursos/${cursoId}/materiales?relacion_id=${relacion_id}`, { method: 'DELETE' });
+        }
+      }
+
+      // Agregar materiales nuevos
+      for (const m of materiales) {
+        if (!m.relacion_id) {
+          await fetch(`/api/admin/cursos/${cursoId}/materiales`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archivo_id: m.archivo_id }),
+          });
+        }
+      }
+
+      // Actualizar orden
+      const materialesConId = materiales.filter(m => m.relacion_id);
+      if (materialesConId.length > 0) {
+        await fetch(`/api/admin/cursos/${cursoId}/materiales`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ materiales: materialesConId.map((m, i) => ({ relacion_id: m.relacion_id, orden: i + 1 })) }),
+        });
+      }
+
+      // 3. Sincronizar exámenes
+      const exIdsOriginales = examenesOriginales.map(ex => ex.quiz_curso_id);
+      const exIdsActuales = examenes.filter(ex => ex.quiz_curso_id).map(ex => ex.quiz_curso_id);
+
+      // Eliminar exámenes quitados
+      for (const quiz_curso_id of exIdsOriginales) {
+        if (!exIdsActuales.includes(quiz_curso_id)) {
+          await fetch(`/api/admin/cursos/${cursoId}/examenes?quiz_curso_id=${quiz_curso_id}`, { method: 'DELETE' });
+        }
+      }
+
+      // Agregar exámenes nuevos
+      for (const ex of examenes) {
+        if (!ex.quiz_curso_id) {
+          await fetch(`/api/admin/cursos/${cursoId}/examenes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quiz_id: ex.quiz_id }),
+          });
+        }
+      }
+
+      // Actualizar orden exámenes
+      const examenesConId = examenes.filter(ex => ex.quiz_curso_id);
+      if (examenesConId.length > 0) {
+        await fetch(`/api/admin/cursos/${cursoId}/examenes`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ examenes: examenesConId.map((ex, i) => ({ quiz_curso_id: ex.quiz_curso_id, orden: i + 1 })) }),
+        });
+      }
+
+      alert('Curso actualizado correctamente');
+      await cargarDatos(); // Recargar para sincronizar IDs reales
     } catch (err) {
-      alert('Error al conectar con el servidor');
+      alert('Error al guardar los cambios');
     } finally {
       setSaving(false);
     }
@@ -93,65 +172,50 @@ export default function EditarCurso({ params }) {
     }
   };
 
-  const agregarMaterial = async (archivo_id) => {
-    await fetch(`/api/admin/cursos/${cursoId}/materiales`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ archivo_id }),
-    });
+  // Agregar material al estado local (sin llamar al API)
+  const agregarMaterial = (archivo_id) => {
+    const archivo = todosMateriales.find(m => m.archivo_id === archivo_id);
+    if (!archivo) return;
+    setMateriales([...materiales, { ...archivo, relacion_id: null, orden: materiales.length + 1 }]);
     setShowAddMaterial(false);
-    cargarDatos();
   };
 
-  const eliminarMaterial = async (relacion_id) => {
-    await fetch(`/api/admin/cursos/${cursoId}/materiales?relacion_id=${relacion_id}`, { method: 'DELETE' });
-    cargarDatos();
+  // Quitar material del estado local
+  const eliminarMaterial = (index) => {
+    setMateriales(materiales.filter((_, i) => i !== index));
   };
 
-  const moverMaterial = async (index, direccion) => {
+  // Mover material en estado local
+  const moverMaterial = (index, direccion) => {
     const nuevos = [...materiales];
     const swap = index + direccion;
     if (swap < 0 || swap >= nuevos.length) return;
     [nuevos[index], nuevos[swap]] = [nuevos[swap], nuevos[index]];
-    const actualizados = nuevos.map((m, i) => ({ ...m, orden: i + 1 }));
-    setMateriales(actualizados);
-    await fetch(`/api/admin/cursos/${cursoId}/materiales`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ materiales: actualizados.map(m => ({ relacion_id: m.relacion_id, orden: m.orden })) }),
-    });
+    setMateriales(nuevos);
   };
 
-  const agregarExamen = async (quiz_id) => {
-    await fetch(`/api/admin/cursos/${cursoId}/examenes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quiz_id }),
-    });
+  // Agregar examen al estado local
+  const agregarExamen = (quiz_id) => {
+    const examen = todosExamenes.find(ex => ex.quiz_id === quiz_id);
+    if (!examen) return;
+    setExamenes([...examenes, { ...examen, quiz_curso_id: null, orden: examenes.length + 1 }]);
     setShowAddExamen(false);
-    cargarDatos();
   };
 
-  const eliminarExamen = async (quiz_curso_id) => {
-    await fetch(`/api/admin/cursos/${cursoId}/examenes?quiz_curso_id=${quiz_curso_id}`, { method: 'DELETE' });
-    cargarDatos();
+  // Quitar examen del estado local
+  const eliminarExamen = (index) => {
+    setExamenes(examenes.filter((_, i) => i !== index));
   };
 
-  const moverExamen = async (index, direccion) => {
+  // Mover examen en estado local
+  const moverExamen = (index, direccion) => {
     const nuevos = [...examenes];
     const swap = index + direccion;
     if (swap < 0 || swap >= nuevos.length) return;
     [nuevos[index], nuevos[swap]] = [nuevos[swap], nuevos[index]];
-    const actualizados = nuevos.map((ex, i) => ({ ...ex, orden: i + 1 }));
-    setExamenes(actualizados);
-    await fetch(`/api/admin/cursos/${cursoId}/examenes`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examenes: actualizados.map(ex => ({ quiz_curso_id: ex.quiz_curso_id, orden: ex.orden })) }),
-    });
+    setExamenes(nuevos);
   };
 
-  // Filtrar los que ya están en el curso
   const materialesDisponibles = todosMateriales.filter(m => !materiales.find(mc => mc.archivo_id === m.archivo_id));
   const examenesDisponibles = todosExamenes.filter(ex => !examenes.find(ec => ec.quiz_id === ex.quiz_id));
 
@@ -167,7 +231,6 @@ export default function EditarCurso({ params }) {
         <ArrowLeft size={18} /> Volver al Panel
       </Link>
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900">Editar Curso</h1>
@@ -198,7 +261,6 @@ export default function EditarCurso({ params }) {
               rows={4} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Descripción completa del curso..." />
           </div>
         </div>
-        
       </div>
 
       {/* Materiales */}
@@ -216,12 +278,11 @@ export default function EditarCurso({ params }) {
           )}
         </div>
 
-        {/* Selector de materiales */}
         {showAddMaterial && (
           <div className="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Selecciona un material</p>
             {materialesDisponibles.length === 0 ? (
-              <p className="text-slate-400 text-sm font-medium">No hay materiales disponibles para agregar</p>
+              <p className="text-slate-400 text-sm font-medium">No hay materiales disponibles</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {materialesDisponibles.map(m => (
@@ -240,13 +301,12 @@ export default function EditarCurso({ params }) {
           </div>
         )}
 
-        {/* Lista de materiales */}
         {materiales.length === 0 ? (
           <p className="text-slate-400 text-sm font-medium text-center py-6">No hay materiales en este curso</p>
         ) : (
           <div className="space-y-2">
             {materiales.map((m, index) => (
-              <div key={m.relacion_id} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+              <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
                 <div className="flex flex-col gap-1">
                   <button onClick={() => moverMaterial(index, -1)} disabled={index === 0}
                     className="p-1 text-slate-300 hover:text-slate-600 disabled:opacity-20 transition-colors">
@@ -263,7 +323,10 @@ export default function EditarCurso({ params }) {
                   <p className="font-bold text-slate-800 text-sm truncate">{m.nombre_archivo}</p>
                   <p className="text-slate-400 text-xs">{m.tipo_archivo}</p>
                 </div>
-                <button onClick={() => eliminarMaterial(m.relacion_id)}
+                {!m.relacion_id && (
+                  <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Nuevo</span>
+                )}
+                <button onClick={() => eliminarMaterial(index)}
                   className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
                   <X size={16} />
                 </button>
@@ -288,12 +351,11 @@ export default function EditarCurso({ params }) {
           )}
         </div>
 
-        {/* Selector de exámenes */}
         {showAddExamen && (
           <div className="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Selecciona un examen</p>
             {examenesDisponibles.length === 0 ? (
-              <p className="text-slate-400 text-sm font-medium">No hay exámenes disponibles para agregar</p>
+              <p className="text-slate-400 text-sm font-medium">No hay exámenes disponibles</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {examenesDisponibles.map(ex => (
@@ -312,13 +374,12 @@ export default function EditarCurso({ params }) {
           </div>
         )}
 
-        {/* Lista de exámenes */}
         {examenes.length === 0 ? (
           <p className="text-slate-400 text-sm font-medium text-center py-6">No hay exámenes en este curso</p>
         ) : (
           <div className="space-y-2">
             {examenes.map((ex, index) => (
-              <div key={ex.quiz_curso_id} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+              <div key={index} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
                 <div className="flex flex-col gap-1">
                   <button onClick={() => moverExamen(index, -1)} disabled={index === 0}
                     className="p-1 text-slate-300 hover:text-slate-600 disabled:opacity-20 transition-colors">
@@ -335,7 +396,10 @@ export default function EditarCurso({ params }) {
                   <p className="font-bold text-slate-800 text-sm truncate">{ex.titulo}</p>
                   <p className="text-slate-400 text-xs">{ex.total_preguntas} preguntas</p>
                 </div>
-                <button onClick={() => eliminarExamen(ex.quiz_curso_id)}
+                {!ex.quiz_curso_id && (
+                  <span className="text-[10px] font-black text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full">Nuevo</span>
+                )}
+                <button onClick={() => eliminarExamen(index)}
                   className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
                   <X size={16} />
                 </button>
@@ -361,6 +425,7 @@ export default function EditarCurso({ params }) {
           Gestionar Alumnos
         </Link>
       </div>
+
       {/* Acciones */}
       <div className="flex gap-4 mt-6">
         <button onClick={handleSave} disabled={saving}
