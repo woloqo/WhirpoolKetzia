@@ -1,12 +1,16 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Calendar, BookOpen, CheckCircle, LogOut, Edit3, Save, X, Camera, Loader2, Gem, Plus, Trash2, Pencil } from 'lucide-react';
+import { 
+  User, Mail, Calendar, BookOpen, CheckCircle, LogOut, Edit3, Save, X, 
+  Camera, Loader2, Gem, Plus, Trash2, Pencil, MessageSquare, Heart 
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 // Importación de componentes refactorizados
 import { Button } from '@/components/Button';
 import { Title, Text, PageHeader } from '@/components/Typography';
+import { SectionCard } from '@/components/SectionCard';
 
 export default function PerfilPage() {
   const [datos, setDatos] = useState(null);
@@ -18,16 +22,31 @@ export default function PerfilPage() {
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [previewPfp, setPreviewPfp] = useState(null);
   const [filePfp, setFilePfp] = useState(null);
+  
   const [gemas, setGemas] = useState([]);
   const [showGemaForm, setShowGemaForm] = useState(false);
   const [editandoGema, setEditandoGema] = useState(null);
   const [nuevaGema, setNuevaGema] = useState({ titulo: '', descripcion: '' });
   const [savingGema, setSavingGema] = useState(false);
 
+  const [posts, setPosts] = useState([]);
+  const [editandoPost, setEditandoPost] = useState(null);
+  const [savingPost, setSavingPost] = useState(false);
+
   const fetchGemas = async (uid) => {
-    const res = await fetch(`/api/gemas?usuario_id=${uid}`);
-    const data = await res.json();
-    setGemas(data);
+    try {
+      const res = await fetch(`/api/gemas?usuario_id=${uid}`);
+      const data = await res.json();
+      setGemas(Array.isArray(data) ? data : []);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchPosts = async (uid) => {
+    try {
+      const res = await fetch(`/api/comunidad?usuario_id=${uid}`);
+      const data = await res.json();
+      setPosts(Array.isArray(data) ? data : []);
+    } catch (e) { console.error(e); }
   };
 
   const fetchDatos = async () => {
@@ -40,6 +59,7 @@ export default function PerfilPage() {
       setNuevoNombre(data.usuario.alias || '');
       setLoading(false);
       fetchGemas(usuarioId);
+      fetchPosts(usuarioId);
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -71,80 +91,51 @@ export default function PerfilPage() {
     try {
       let pfpUrl = datos.usuario.pfp;
       if (filePfp) pfpUrl = await uploadPfp(filePfp, userId);
-
       const res = await fetch('/api/perfil', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario_id: userId, alias: nuevoNombre, pfp: pfpUrl }),
       });
-
       if (res.ok) {
         setEditMode(false);
         setFilePfp(null);
         await fetchDatos();
-      } else {
-        throw new Error("Error al actualizar");
       }
     } catch (error) {
-      console.error(error);
-      alert("Error al guardar los cambios");
+      alert("Error al actualizar perfil");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
-    router.refresh();
-  };
-
-  const removerFoto = () => {
-    setFilePfp(null);
-    setPreviewPfp(null);
-  };
-
-  const handleCrearGema = async () => {
-    if (!nuevaGema.titulo.trim() || !nuevaGema.descripcion.trim()) return;
-    setSavingGema(true);
+  const handleEditarPost = async () => {
+    if (!editandoPost?.contenido.trim()) return;
+    setSavingPost(true);
     const userId = localStorage.getItem('usuario_id');
-    const res = await fetch('/api/gemas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario_id: userId, ...nuevaGema }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setNuevaGema({ titulo: '', descripcion: '' });
-      setShowGemaForm(false);
-      fetchGemas(userId);
-    } else {
-      alert(data.error);
-    }
-    setSavingGema(false);
+    try {
+      const res = await fetch('/api/comunidad', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          publicacion_id: editandoPost.publicacion_id, 
+          usuario_id: userId, 
+          titulo: editandoPost.titulo, 
+          contenido: editandoPost.contenido 
+        }),
+      });
+      if (res.ok) {
+        setEditandoPost(null);
+        fetchPosts(userId);
+      }
+    } catch (e) { console.error(e); }
+    finally { setSavingPost(false); }
   };
 
-  const handleEditarGema = async () => {
-    if (!editandoGema.titulo.trim() || !editandoGema.descripcion.trim()) return;
-    setSavingGema(true);
+  const handleEliminarPost = async (id) => {
+    if (!window.confirm('¿Eliminar esta publicación?')) return;
     const userId = localStorage.getItem('usuario_id');
-    const res = await fetch('/api/gemas', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario_id: userId, ...editandoGema }),
-    });
-    if (res.ok) {
-      setEditandoGema(null);
-      fetchGemas(userId);
-    }
-    setSavingGema(false);
-  };
-
-  const handleEliminarGema = async (gema_id) => {
-    if (!window.confirm('¿Eliminar esta gema?')) return;
-    const userId = localStorage.getItem('usuario_id');
-    await fetch(`/api/gemas?gema_id=${gema_id}&usuario_id=${userId}`, { method: 'DELETE' });
-    fetchGemas(userId);
+    const res = await fetch(`/api/comunidad?id=${id}&uid=${userId}`, { method: 'DELETE' });
+    if (res.ok) fetchPosts(userId);
   };
 
   if (loading) return (
@@ -153,247 +144,197 @@ export default function PerfilPage() {
     </div>
   );
 
-  if (!datos || !datos.usuario) return <div className="p-20 text-center font-black">Usuario no encontrado</div>;
-
   const { usuario, stats } = datos;
 
-  const colores = [
-    'from-blue-500 to-blue-600',
-    'from-purple-500 to-purple-600',
-    'from-emerald-500 to-emerald-600',
-    'from-orange-500 to-orange-600',
-    'from-pink-500 to-pink-600',
-    'from-cyan-500 to-cyan-600',
-  ];
-
   return (
-    <div className="max-w-7xl mx-auto p-6 lg:p-10 pb-32 relative">
+    // Contenedor principal con altura fija para evitar el scroll del body
+    <div className="max-w-full mx-auto px-4 md:px-8 h-screen overflow-hidden bg-slate-50/30">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full py-6 lg:py-10">
+        
+        {/* COLUMNA IZQUIERDA: PERFIL, STATS Y CUENTA (Scroll Independiente) */}
+        <div className="lg:col-span-5 h-full overflow-y-auto pr-2 custom-scrollbar space-y-6">
+          
+          {/* Tarjeta de Identidad */}
+          <SectionCard className="relative overflow-hidden">
+            <div className="p-6 flex flex-col items-center text-center">
+              <div className="relative group mb-4">
+                <div className="w-32 h-32 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-xl overflow-hidden border-4 border-white transition-transform duration-500">
+                  {previewPfp || usuario.pfp ? (
+                    <img src={previewPfp || usuario.pfp} className="w-full h-full object-cover" alt="Avatar" />
+                  ) : (
+                    <User size={60} />
+                  )}
+                </div>
+                {editMode && (
+                  <label className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera size={24} />
+                    <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                  </label>
+                )}
+              </div>
 
-      {/* Header de Perfil */}
-      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-10 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
-        <div className="relative group shrink-0">
-          <div className="w-32 h-32 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-blue-100 overflow-hidden border-4 border-white rotate-3 group-hover:rotate-0 transition-transform duration-500">
-            {previewPfp || usuario.pfp ? (
-              <img src={previewPfp || usuario.pfp} className="w-full h-full object-cover scale-110 -rotate-3 group-hover:rotate-0 group-hover:scale-105 transition-all duration-500" alt="Avatar" />
-            ) : (
-              <User size={60} className="-rotate-3 group-hover:rotate-0 transition-transform duration-500" />
-            )}
-          </div>
-          {editMode && (
-            <label className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 text-white rounded-3xl cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera size={24} />
-              <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-            </label>
-          )}
-        </div>
-
-        <div className="text-center md:text-left flex-grow z-10">
-          {editMode ? (
-            <div className="space-y-2">
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">{usuario.nombre}</h1>
-              <input
-                className="text-lg font-bold text-slate-500 bg-slate-50 border-b-2 border-blue-500 outline-none w-full max-w-md px-2 py-1"
-                value={nuevoNombre}
-                onChange={(e) => setNuevoNombre(e.target.value)}
-                placeholder="Escribe tu alias..."
-                autoFocus
-              />
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Alias público</p>
-            </div>
-          ) : (
-            <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-                {usuario.alias || usuario.nombre}
-              </h1>
-              {usuario.alias && (
-                <p className="text-slate-400 text-sm font-medium mt-1">{usuario.nombre}</p>
+              {editMode ? (
+                <div className="space-y-2 w-full">
+                  <input
+                    className="text-lg font-bold text-slate-700 bg-slate-50 border-b-2 border-blue-500 outline-none w-full px-2 py-1 text-center"
+                    value={nuevoNombre}
+                    onChange={(e) => setNuevoNombre(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight">{usuario.alias || usuario.nombre}</h1>
+                  {usuario.alias && <p className="text-slate-400 text-xs font-bold uppercase mt-1">{usuario.nombre}</p>}
+                </div>
               )}
-            </div>
-          )}
-          <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-3">
-            <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest flex items-center gap-1.5 shadow-md shadow-blue-100">
-              {usuario.nombre_rol}
-            </span>
-            <span className="text-slate-400 text-sm font-bold flex items-center gap-1.5">
-              <Calendar size={16} /> Miembro desde {new Date(usuario.fecha_creacion).toLocaleDateString()}
-            </span>
-          </div>
-        </div>
 
-        {/* CONTROLES DE EDICIÓN A LA DERECHA */}
-        <div className="shrink-0 flex flex-col gap-2">
-          {editMode ? (
-            <>
-              <Button onClick={handleSave} loading={saving} variant="primary" icon={Save} className="px-8 py-3 rounded-xl" />
-              <Button onClick={() => { setEditMode(false); setPreviewPfp(null); setNuevoNombre(usuario.alias || ''); }} variant="ghost" icon={X} className="px-8 py-3 rounded-xl" />
-            </>
-          ) : (
-            <Button onClick={() => setEditMode(true)} variant="ghost" icon={Edit3} className="text-[10px] uppercase font-black tracking-widest px-8 py-3 border-slate-100 text-slate-600 hover:bg-slate-50">
-              Editar Perfil
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Stats y datos */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        <div className="w-full lg:w-[60%] space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-5">
-              <div className="bg-orange-100 text-orange-600 p-4 rounded-2xl"><BookOpen size={28} /></div>
-              <div>
-                <p className="text-3xl font-black text-slate-900 leading-none">{stats.total_inscritos-stats.total_completados}</p>
-                <p className="text-slate-400 text-xs font-black uppercase mt-1">Cursos Asignados</p>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-5">
-              <div className="bg-emerald-100 text-emerald-600 p-4 rounded-2xl"><CheckCircle size={28} /></div>
-              <div>
-                <p className="text-3xl font-black text-slate-900 leading-none">{stats.total_completados}</p>
-                <p className="text-slate-400 text-xs font-black uppercase mt-1">Finalizado(s)</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <aside className="w-full lg:w-[40%] space-y-6">
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
-            <h2 className="text-xl font-black text-slate-900 mb-8 border-b border-slate-100 pb-4 italic">Datos de la Cuenta</h2>
-            <div className="space-y-8">
-              <div className="group">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Correo Electrónico</p>
-                <p className="text-slate-900 font-bold flex items-center gap-2 group-hover:text-blue-600 transition-colors">
-                  <Mail size={16} className="text-blue-500" /> {usuario.email}
-                </p>
-              </div>
-              <div className="group">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">ID en la plataforma</p>
-                <p className="text-slate-900 font-mono font-black text-lg">#ID-{usuario.usuario_id.toString()}</p>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {/* DIVISOR */}
-      <div className="flex items-center gap-4 my-10">
-        <div className="flex-1 h-px bg-slate-200"></div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <Gem size={16} />
-          <span className="text-xs font-black uppercase tracking-widest">Mis Gemas</span>
-        </div>
-        <div className="flex-1 h-px bg-slate-200"></div>
-      </div>
-
-      {/* SECCIÓN GEMAS */}
-      <div className="mb-20">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-              <Gem size={26} className="text-blue-600" /> Mis Gemas
-              <span className="bg-blue-100 text-blue-600 text-xs font-black px-2 py-0.5 rounded-full">{gemas.length}/10</span>
-            </h2>
-            <p className="text-slate-400 text-sm font-medium mt-1">Habilidades y logros que has desarrollado</p>
-          </div>
-          {gemas.length < 10 && !showGemaForm && (
-            <Button onClick={() => setShowGemaForm(true)} variant="primary" icon={Plus} className="text-xs px-5 py-3 rounded-xl font-black uppercase tracking-widest">
-              Nueva Gema
-            </Button>
-          )}
-        </div>
-
-        {showGemaForm && (
-          <div className="bg-white rounded-[2rem] p-6 border border-blue-100 shadow-sm mb-8 animate-in fade-in zoom-in-95 duration-200 max-w-2xl">
-            <h3 className="font-black text-slate-900 mb-4 text-sm uppercase tracking-widest">Nueva Gema</h3>
-            <input
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-              placeholder="Título de tu gema..."
-              value={nuevaGema.titulo}
-              onChange={(e) => setNuevaGema({ ...nuevaGema, titulo: e.target.value })}
-              maxLength={100}
-            />
-            <textarea
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 mb-4 resize-none"
-              placeholder="Describe tu gema..."
-              rows={3}
-              value={nuevaGema.descripcion}
-              onChange={(e) => setNuevaGema({ ...nuevaGema, descripcion: e.target.value })}
-            />
-            <div className="flex gap-2 justify-end">
-              <Button onClick={() => { setShowGemaForm(false); setNuevaGema({ titulo: '', descripcion: '' }); }} variant="ghost" className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">
-                Cancelar
-              </Button>
-              <Button onClick={handleCrearGema} loading={savingGema} variant="primary" className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest">
-                Guardar Gema
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {gemas.map((gema, index) => {
-            const color = colores[index % colores.length];
-            return editandoGema?.gema_id === gema.gema_id ? (
-              <div key={gema.gema_id} className="bg-white rounded-[2rem] p-5 border-2 border-blue-300 shadow-sm">
-                <input
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                  value={editandoGema.titulo}
-                  onChange={(e) => setEditandoGema({ ...editandoGema, titulo: e.target.value })}
-                  maxLength={100}
-                />
-                <textarea
-                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 mb-3 resize-none"
-                  rows={3}
-                  value={editandoGema.descripcion}
-                  onChange={(e) => setEditandoGema({ ...editandoGema, descripcion: e.target.value })}
-                />
-                <div className="flex gap-2 justify-end">
-                  <Button onClick={() => setEditandoGema(null)} variant="ghost" className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest">
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleEditarGema} loading={savingGema} variant="primary" className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest">
-                    Guardar
-                  </Button>
+              <div className="flex flex-col items-center gap-3 mt-4 w-full">
+                <span className="bg-blue-600 text-white text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-md">
+                  {usuario.nombre_rol}
+                </span>
+                <div className="flex gap-2">
+                  {editMode ? (
+                    <>
+                      <Button onClick={handleSave} loading={saving} variant="primary" icon={Save} className="py-2 px-4 text-xs" />
+                      <Button onClick={() => { setEditMode(false); setPreviewPfp(null); }} variant="ghost" icon={X} className="py-2 px-4 text-xs" />
+                    </>
+                  ) : (
+                    <Button onClick={() => setEditMode(true)} variant="ghost" icon={Edit3} className="py-2 px-4 text-[9px] uppercase">Editar Perfil</Button>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div key={gema.gema_id} className="bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-lg transition-all group">
-                <div className={`bg-gradient-to-br ${color} p-6 flex items-center justify-between`}>
-                  <Gem size={32} className="text-white opacity-90" />
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditandoGema({ ...gema })}
-                      className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all">
-                      <Pencil size={14} />
-                    </button>
-                    <button onClick={() => handleEliminarGema(gema.gema_id)}
-                      className="p-1.5 bg-white/20 hover:bg-red-500 rounded-lg text-white transition-all">
-                      <Trash2 size={14} />
-                    </button>
+            </div>
+          </SectionCard>
+
+          {/* Estadísticas */}
+          <SectionCard title="Estadísticas">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
+                <div className="bg-orange-100 text-orange-600 p-3 rounded-xl"><BookOpen size={20} /></div>
+                <div>
+                  <p className="text-xl font-black text-slate-900">{stats.total_inscritos - stats.total_completados}</p>
+                  <Text variant="muted">Pendientes</Text>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
+                <div className="bg-emerald-100 text-emerald-600 p-3 rounded-xl"><CheckCircle size={20} /></div>
+                <div>
+                  <p className="text-xl font-black text-slate-900">{stats.total_completados}</p>
+                  <Text variant="muted">Finalizados</Text>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Mis Gemas */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Title><Gem size={18} className="text-blue-600" /> Mis Gemas</Title>
+              {!showGemaForm && <Button onClick={() => setShowGemaForm(true)} variant="pill" icon={Plus}>Añadir</Button>}
+            </div>
+            <div className="space-y-3">
+              {gemas.map((gema) => (
+                <div key={`gema-${gema.gema_id}`} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-start gap-4">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Gem size={16}/></div>
+                  <div className="min-w-0">
+                    <h3 className="font-black text-slate-900 text-xs">{gema.titulo}</h3>
+                    <p className="text-slate-500 text-[10px] line-clamp-2 mt-0.5">{gema.descripcion}</p>
                   </div>
                 </div>
-                <div className="p-5">
-                  <h3 className="font-black text-slate-900 text-sm mb-2">{gema.titulo}</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">{gema.descripcion}</p>
-                  <Text variant="muted" className="mt-4">
-                    {new Date(gema.fecha_creacion).toLocaleDateString()}
-                  </Text>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+              ))}
+            </div>
+          </div>
 
-      {/* BOTÓN LOGOUT AL FINAL ESQUINA DERECHA */}
-      <div className="flex justify-end mt-10">
-        <Button 
-          onClick={handleLogout} 
-          variant="danger" 
-          icon={LogOut} 
-          className="px-10 py-4 rounded-2xl text-xs uppercase tracking-widest font-black shadow-red-100"
-        >
-          Cerrar Sesión
-        </Button>
+          <SectionCard title="Cuenta">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-2 text-slate-600 text-xs font-bold truncate">
+                <Mail size={14} className="text-blue-500" /> {usuario.email}
+              </div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-2">
+                <Calendar size={14} /> Desde {new Date(usuario.fecha_creacion).toLocaleDateString()}
+              </div>
+              <Button onClick={() => { localStorage.clear(); router.push('/login'); }} variant="danger" icon={LogOut} className="w-full py-3 mt-2 text-[10px] uppercase">Cerrar Sesión</Button>
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* COLUMNA DERECHA: PUBLICACIONES (Scroll Independiente) */}
+        <div className="lg:col-span-7 h-full overflow-y-auto pr-2 custom-scrollbar space-y-8">
+          <Title className="mb-6 sticky top-0 bg-slate-50/30 backdrop-blur-sm py-2 z-10">
+            <MessageSquare className="text-blue-600" /> Historial de Actividad
+          </Title>
+          
+          <div className="space-y-6 pb-20">
+            {posts.length > 0 ? posts.map(post => (
+              <SectionCard 
+                key={`post-${post.publicacion_id}`} 
+                title={
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-800">{post.titulo || "Sin título"}</span>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{new Date(post.fecha_publicacion).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setEditandoPost(post)} className="p-2 text-slate-300 hover:text-blue-500 transition-colors"><Pencil size={14}/></button>
+                      <button onClick={() => handleEliminarPost(post.publicacion_id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
+                    </div>
+                  </div>
+                }
+              >
+                <div className="p-4 pt-2">
+                  {editandoPost?.publicacion_id === post.publicacion_id ? (
+                    <div className="space-y-3">
+                      <input className="w-full p-3 border rounded-xl font-bold text-sm" value={editandoPost.titulo || ""} onChange={e => setEditandoPost({...editandoPost, titulo: e.target.value})} />
+                      <textarea 
+                        className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm min-h-[120px]"
+                        value={editandoPost.contenido}
+                        onChange={(e) => setEditandoPost({...editandoPost, contenido: e.target.value})}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" className="px-4 py-2" onClick={() => setEditandoPost(null)}>Cancelar</Button>
+                        <Button loading={savingPost} className="px-4 py-2" onClick={handleEditarPost}>Actualizar</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-slate-700 text-sm font-medium leading-relaxed mb-6 whitespace-pre-wrap">{post.contenido}</p>
+                      
+                      {/* IMÁGENES ADJUNTAS */}
+                      {post.imagenes?.length > 0 && (
+                        <div className={`grid gap-3 mb-6 ${post.imagenes.length === 1 ? 'grid-cols-1' : post.imagenes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                          {post.imagenes.map((img) => (
+                            <div key={img.imagen_id} className="rounded-2xl overflow-hidden border border-slate-100 h-64 shadow-sm bg-slate-50">
+                              <img 
+                                src={img.url_imagen} 
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" 
+                                alt="Publicación"
+                                onClick={() => window.open(img.url_imagen, '_blank')}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-6 border-t pt-4">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400">
+                          <Heart size={16} className={post.iLiked ? "text-red-500 fill-current" : ""} /> {post.totalLikes || 0} Likes
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400">
+                          <MessageSquare size={16} /> {post.comentarios?.length || 0} Comentarios
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </SectionCard>
+            )) : (
+              <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+                <p className="text-slate-400 font-bold italic">No hay publicaciones recientes.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
