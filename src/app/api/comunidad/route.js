@@ -6,9 +6,13 @@ export async function GET(request) {
   const limit = parseInt(searchParams.get('limit')) || 5;
   const offset = parseInt(searchParams.get('offset')) || 0;
   const myId = searchParams.get('myId') || 0;
+  
+  // NUEVO: Capturamos el filtro de usuario para el Perfil
+  const targetUserId = searchParams.get('usuario_id');
 
   try {
-    const [posts] = await pool.query(`
+    // Construimos la query dinámicamente
+    let query = `
       SELECT p.*, u.nombre, u.pfp,
       (SELECT COUNT(*) FROM LikesPublicacion WHERE publicacion_id = p.publicacion_id) as totalLikes,
       (SELECT COUNT(*) FROM LikesPublicacion WHERE publicacion_id = p.publicacion_id AND usuario_id = ?) as iLiked,
@@ -16,14 +20,26 @@ export async function GET(request) {
       FROM Publicaciones p 
       JOIN Usuarios u ON p.usuario_id = u.usuario_id
       LEFT JOIN Gemas g ON p.gema_id = g.gema_id
-      ORDER BY p.fecha_publicacion DESC
-      LIMIT ? OFFSET ?
-    `, [myId, limit, offset]);
+    `;
+
+    const queryParams = [myId];
+
+    // Si targetUserId existe, filtramos. Si no, traemos todo (Comunidad)
+    if (targetUserId) {
+      query += ` WHERE p.usuario_id = ? `;
+      queryParams.push(targetUserId);
+    }
+
+    query += ` ORDER BY p.fecha_publicacion DESC LIMIT ? OFFSET ?`;
+    queryParams.push(limit, offset);
+
+    const [posts] = await pool.query(query, queryParams);
 
     if (!posts || posts.length === 0) return NextResponse.json([]);
 
     const postIds = posts.map(p => p.publicacion_id);
 
+    // Los comentarios y las imágenes se mantienen igual
     const [comentarios] = await pool.query(`
       SELECT c.*, u.nombre, u.pfp,
       (SELECT COUNT(*) FROM LikesComentario WHERE comentario_id = c.comentario_id) as totalLikes,
@@ -34,7 +50,6 @@ export async function GET(request) {
       ORDER BY c.fecha_comentario DESC
     `, [myId, postIds]);
 
-    // Cargar imágenes de los posts
     const [imagenes] = await pool.query(`
       SELECT * FROM Publicaciones_Imagenes 
       WHERE publicacion_id IN (?)

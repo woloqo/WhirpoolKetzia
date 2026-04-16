@@ -43,7 +43,8 @@ export default function PerfilPage() {
 
   const fetchPosts = async (uid) => {
     try {
-      const res = await fetch(`/api/comunidad?usuario_id=${uid}`);
+      // Filtrado por usuario_id para ver solo publicaciones propias
+      const res = await fetch(`/api/comunidad?usuario_id=${uid}&myId=${uid}`);
       const data = await res.json();
       setPosts(Array.isArray(data) ? data : []);
     } catch (e) { console.error(e); }
@@ -147,14 +148,11 @@ export default function PerfilPage() {
   const { usuario, stats } = datos;
 
   return (
-    // Contenedor principal con altura fija para evitar el scroll del body
     <div className="max-w-full mx-auto px-4 md:px-8 h-screen overflow-hidden bg-slate-50/30">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full py-6 lg:py-10">
         
         {/* COLUMNA IZQUIERDA: PERFIL, STATS Y CUENTA (Scroll Independiente) */}
         <div className="lg:col-span-5 h-full overflow-y-auto pr-2 custom-scrollbar space-y-6">
-          
-          {/* Tarjeta de Identidad */}
           <SectionCard className="relative overflow-hidden">
             <div className="p-6 flex flex-col items-center text-center">
               <div className="relative group mb-4">
@@ -176,7 +174,7 @@ export default function PerfilPage() {
               {editMode ? (
                 <div className="space-y-2 w-full">
                   <input
-                    className="text-lg font-bold text-slate-700 bg-slate-50 border-b-2 border-blue-500 outline-none w-full px-2 py-1 text-center"
+                    className="text-lg font-bold text-slate-700 bg-slate-50 border-b-2 border-blue-500 outline-none w-full px-2 py-1 text-center rounded-lg"
                     value={nuevoNombre}
                     onChange={(e) => setNuevoNombre(e.target.value)}
                     autoFocus
@@ -207,7 +205,6 @@ export default function PerfilPage() {
             </div>
           </SectionCard>
 
-          {/* Estadísticas */}
           <SectionCard title="Estadísticas">
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
@@ -227,12 +224,8 @@ export default function PerfilPage() {
             </div>
           </SectionCard>
 
-          {/* Mis Gemas */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Title><Gem size={18} className="text-blue-600" /> Mis Gemas</Title>
-              {!showGemaForm && <Button onClick={() => setShowGemaForm(true)} variant="pill" icon={Plus}>Añadir</Button>}
-            </div>
+            <Title><Gem size={18} className="text-blue-600" /> Mis Gemas</Title>
             <div className="space-y-3">
               {gemas.map((gema) => (
                 <div key={`gema-${gema.gema_id}`} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-start gap-4">
@@ -259,10 +252,10 @@ export default function PerfilPage() {
           </SectionCard>
         </div>
 
-        {/* COLUMNA DERECHA: PUBLICACIONES (Scroll Independiente) */}
+        {/* COLUMNA DERECHA: MIS PUBLICACIONES (Scroll Independiente) */}
         <div className="lg:col-span-7 h-full overflow-y-auto pr-2 custom-scrollbar space-y-8">
-          <Title className="mb-6 sticky top-0 bg-slate-50/30 backdrop-blur-sm py-2 z-10">
-            <MessageSquare className="text-blue-600" /> Historial de Actividad
+          <Title className="mb-6 sticky top-0 bg-slate-50/80 backdrop-blur-md py-4 z-10">
+            <MessageSquare className="text-blue-600" /> Mis Publicaciones
           </Title>
           
           <div className="space-y-6 pb-20">
@@ -287,7 +280,7 @@ export default function PerfilPage() {
                     <div className="space-y-3">
                       <input className="w-full p-3 border rounded-xl font-bold text-sm" value={editandoPost.titulo || ""} onChange={e => setEditandoPost({...editandoPost, titulo: e.target.value})} />
                       <textarea 
-                        className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm min-h-[120px]"
+                        className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm min-h-[120px] resize-none"
                         value={editandoPost.contenido}
                         onChange={(e) => setEditandoPost({...editandoPost, contenido: e.target.value})}
                       />
@@ -300,7 +293,6 @@ export default function PerfilPage() {
                     <>
                       <p className="text-slate-700 text-sm font-medium leading-relaxed mb-6 whitespace-pre-wrap">{post.contenido}</p>
                       
-                      {/* IMÁGENES ADJUNTAS */}
                       {post.imagenes?.length > 0 && (
                         <div className={`grid gap-3 mb-6 ${post.imagenes.length === 1 ? 'grid-cols-1' : post.imagenes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                           {post.imagenes.map((img) => (
@@ -308,7 +300,7 @@ export default function PerfilPage() {
                               <img 
                                 src={img.url_imagen} 
                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" 
-                                alt="Publicación"
+                                alt="Post"
                                 onClick={() => window.open(img.url_imagen, '_blank')}
                               />
                             </div>
@@ -330,7 +322,7 @@ export default function PerfilPage() {
               </SectionCard>
             )) : (
               <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-                <p className="text-slate-400 font-bold italic">No hay publicaciones recientes.</p>
+                <p className="text-slate-400 font-bold italic">No has realizado ninguna publicación todavía.</p>
               </div>
             )}
           </div>
