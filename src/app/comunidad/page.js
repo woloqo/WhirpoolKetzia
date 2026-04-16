@@ -24,13 +24,15 @@ export default function ComunidadPage() {
   const [buscando, setBuscando] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [showMobileForm, setShowMobileForm] = useState(false);
   const [comentandoId, setComentandoId] = useState(null);
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [comentariosVisibles, setComentariosVisibles] = useState({});
-
   const [editandoPost, setEditandoPost] = useState(null);
   const [editandoComentario, setEditandoComentario] = useState(null);
+
+  const [busquedaPosts, setBusquedaPosts] = useState('');
+  const [filtroGemas, setFiltroGemas] = useState(false);
+  const [filtroFecha, setFiltroFecha] = useState('reciente');
 
   useEffect(() => {
     const uid = localStorage.getItem('usuario_id');
@@ -43,15 +45,12 @@ export default function ComunidadPage() {
     const uid = uidOverride || currentUserId;
     isFetching.current = true;
     const currentOffset = isInitial ? 0 : offset;
-
     if (isInitial) setLoading(true);
     else setLoadingMore(true);
-
     try {
       const res = await fetch(`/api/comunidad?limit=${limit}&offset=${currentOffset}&myId=${uid || 0}`);
       const newData = await res.json();
       if (newData.length < limit) setHasMore(false);
-
       if (isInitial) {
         setPosts(newData);
         setOffset(limit);
@@ -63,7 +62,7 @@ export default function ComunidadPage() {
         });
         setOffset(prev => prev + limit);
       }
-    } catch (e) { console.error(e); } 
+    } catch (e) { console.error(e); }
     finally {
       setLoading(false);
       setLoadingMore(false);
@@ -82,34 +81,44 @@ export default function ComunidadPage() {
   }, [fetchPosts]);
 
   useEffect(() => {
-  if (busquedaUsuario.trim().length < 2) {
-    setResultadosBusqueda([]);
-    return;
-  }
-  const timer = setTimeout(async () => {
-    setBuscando(true);
-    try {
-      const res = await fetch(`/api/usuario/buscar?q=${busquedaUsuario}`);
-      const data = await res.json();
-
-      // Búsqueda fonética con Fuse.js
-      const Fuse = (await import('fuse.js')).default;
-      const fuse = new Fuse(data, {
-        keys: ['nombre', 'alias'],
-        threshold: 0.4,
-        ignoreLocation: true,
-      });
-
-      const resultados = fuse.search(busquedaUsuario).map(r => r.item);
-      setResultadosBusqueda(resultados.length > 0 ? resultados : data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setBuscando(false);
+    if (busquedaUsuario.trim().length < 2) {
+      setResultadosBusqueda([]);
+      return;
     }
-  }, 400);
-  return () => clearTimeout(timer);
-}, [busquedaUsuario]);
+    const timer = setTimeout(async () => {
+      setBuscando(true);
+      try {
+        const res = await fetch(`/api/usuarios/buscar?q=${busquedaUsuario}`);
+        const data = await res.json();
+        const Fuse = (await import('fuse.js')).default;
+        const fuse = new Fuse(data, { keys: ['nombre', 'alias'], threshold: 0.4, ignoreLocation: true });
+        const resultados = fuse.search(busquedaUsuario).map(r => r.item);
+        setResultadosBusqueda(resultados.length > 0 ? resultados : data);
+      } catch (e) { console.error(e); }
+      finally { setBuscando(false); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [busquedaUsuario]);
+
+  // Filtrado de posts
+  const postsFiltrados = posts
+    .filter(post => {
+      if (filtroGemas && !post.gema) return false;
+      if (busquedaPosts.trim().length >= 2) {
+        const query = busquedaPosts.toLowerCase();
+        return (
+          post.nombre?.toLowerCase().includes(query) ||
+          post.contenido?.toLowerCase().includes(query) ||
+          post.titulo?.toLowerCase().includes(query) ||
+          post.gema?.titulo?.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (filtroFecha === 'reciente') return new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion);
+      return new Date(a.fecha_publicacion) - new Date(b.fecha_publicacion);
+    });
 
   const eliminarPost = async (id) => {
     if (!window.confirm("¿Eliminar publicación permanentemente?")) return;
@@ -122,16 +131,10 @@ export default function ComunidadPage() {
     const res = await fetch('/api/comunidad', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        publicacion_id: editandoPost.publicacion_id, 
-        usuario_id: currentUserId,
-        titulo: editandoPost.titulo,
-        contenido: editandoPost.contenido 
-      }),
+      body: JSON.stringify({ publicacion_id: editandoPost.publicacion_id, usuario_id: currentUserId, titulo: editandoPost.titulo, contenido: editandoPost.contenido }),
     });
     if (res.ok) {
-      setPosts(posts.map(p => p.publicacion_id === editandoPost.publicacion_id 
-        ? { ...p, titulo: editandoPost.titulo, contenido: editandoPost.contenido } : p));
+      setPosts(posts.map(p => p.publicacion_id === editandoPost.publicacion_id ? { ...p, titulo: editandoPost.titulo, contenido: editandoPost.contenido } : p));
       setEditandoPost(null);
     }
   };
@@ -141,20 +144,14 @@ export default function ComunidadPage() {
     if (!nuevoComentario.trim() || !currentUserId) return;
     const uNombre = localStorage.getItem('nombre_usuario') || "Usuario";
     const uPfp = localStorage.getItem('usuario_pfp');
-    
     const res = await fetch('/api/comentarios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usuario_id: currentUserId, publicacion_id: publicId, contenido: nuevoComentario }),
     });
-
     if (res.ok) {
       const data = await res.json();
-      const nuevo = { 
-        comentario_id: data.comentario_id, contenido: nuevoComentario, 
-        fecha_comentario: new Date().toISOString(), nombre: uNombre, 
-        pfp: uPfp, totalLikes: 0, iLiked: 0, usuario_id: currentUserId
-      };
+      const nuevo = { comentario_id: data.comentario_id, contenido: nuevoComentario, fecha_comentario: new Date().toISOString(), nombre: uNombre, pfp: uPfp, totalLikes: 0, iLiked: 0, usuario_id: currentUserId };
       setPosts(prev => prev.map(p => p.publicacion_id === publicId ? { ...p, comentarios: [nuevo, ...(p.comentarios || [])] } : p));
       setNuevoComentario('');
       setComentandoId(null);
@@ -165,10 +162,7 @@ export default function ComunidadPage() {
   const eliminarComentario = async (postId, commentId) => {
     if (!window.confirm("¿Eliminar comentario?")) return;
     const res = await fetch(`/api/comentarios?id=${commentId}&uid=${currentUserId}`, { method: 'DELETE' });
-    if (res.ok) {
-      setPosts(posts.map(p => p.publicacion_id === postId 
-        ? { ...p, comentarios: p.comentarios.filter(c => c.comentario_id !== commentId) } : p));
-    }
+    if (res.ok) setPosts(posts.map(p => p.publicacion_id === postId ? { ...p, comentarios: p.comentarios.filter(c => c.comentario_id !== commentId) } : p));
   };
 
   const handleUpdateComentario = async (postId) => {
@@ -176,17 +170,10 @@ export default function ComunidadPage() {
     const res = await fetch('/api/comentarios', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        comentario_id: editandoComentario.comentario_id, 
-        usuario_id: currentUserId,
-        contenido: editandoComentario.contenido 
-      }),
+      body: JSON.stringify({ comentario_id: editandoComentario.comentario_id, usuario_id: currentUserId, contenido: editandoComentario.contenido }),
     });
     if (res.ok) {
-      setPosts(posts.map(p => p.publicacion_id === postId ? {
-        ...p, comentarios: p.comentarios.map(c => c.comentario_id === editandoComentario.comentario_id 
-          ? { ...c, contenido: editandoComentario.contenido } : c)
-      } : p));
+      setPosts(posts.map(p => p.publicacion_id === postId ? { ...p, comentarios: p.comentarios.map(c => c.comentario_id === editandoComentario.comentario_id ? { ...c, contenido: editandoComentario.contenido } : c) } : p));
       setEditandoComentario(null);
     }
   };
@@ -226,13 +213,56 @@ export default function ComunidadPage() {
     <div className="mx-auto p-6 lg:p-10 max-w-[1400px]">
       <PageHeader title="Comunidad Whirlpool" subtitle="Comparte tus dudas y avances con el equipo" icon={Users} />
 
+      {/* BUSCADOR DE POSTS */}
+      <div className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 mb-8 flex flex-col sm:flex-row gap-3 items-center">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+          <input
+            type="text"
+            placeholder="Buscar por usuario, contenido o gema..."
+            value={busquedaPosts}
+            onChange={(e) => setBusquedaPosts(e.target.value)}
+            className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+          />
+          {busquedaPosts && (
+            <button onClick={() => setBusquedaPosts('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => setFiltroGemas(!filtroGemas)}
+          className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+            filtroGemas ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-slate-50 text-slate-400 border border-slate-100 hover:border-blue-200 hover:text-blue-600'
+          }`}
+        >
+          <Gem size={14} /> Con gema
+        </button>
+        <select
+          value={filtroFecha}
+          onChange={(e) => setFiltroFecha(e.target.value)}
+          className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black text-slate-500 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer"
+        >
+          <option value="reciente">Más reciente</option>
+          <option value="antiguo">Más antiguo</option>
+        </select>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-8 items-start">
-        
+
         {/* COLUMNA PRINCIPAL */}
         <div className="w-full lg:w-2/3 space-y-8">
           {loading ? (
             <div className="text-center p-20"><Loader2 className="animate-spin mx-auto text-blue-600" size={32} /></div>
-          ) : posts.map((post) => {
+          ) : postsFiltrados.length === 0 && (busquedaPosts || filtroGemas) ? (
+            <div className="bg-white rounded-[2rem] p-12 text-center border border-slate-100">
+              <Search size={32} className="mx-auto text-slate-200 mb-3" />
+              <p className="text-slate-400 font-bold">No se encontraron publicaciones</p>
+              <button onClick={() => { setBusquedaPosts(''); setFiltroGemas(false); }} className="mt-3 text-blue-600 text-xs font-black hover:text-blue-700">
+                Limpiar filtros
+              </button>
+            </div>
+          ) : postsFiltrados.map((post) => {
             const esMio = String(post.usuario_id) === String(currentUserId);
             const limite = comentariosVisibles[post.publicacion_id] || 1;
             const comentariosAMostrar = post.comentarios?.slice(0, limite) || [];
@@ -297,7 +327,7 @@ export default function ComunidadPage() {
                       </div>
                       <Button variant={comentandoId === post.publicacion_id ? "danger" : "pill"} onClick={() => setComentandoId(comentandoId === post.publicacion_id ? null : post.publicacion_id)}>{comentandoId === post.publicacion_id ? 'Cancelar' : 'Responder'}</Button>
                     </div>
-                    
+
                     {comentandoId === post.publicacion_id && (
                       <form onSubmit={(e) => handleCommentSubmit(e, post.publicacion_id)} className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                         <input className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Responder..." value={nuevoComentario} onChange={(e) => setNuevoComentario(e.target.value)} autoFocus />
@@ -309,7 +339,6 @@ export default function ComunidadPage() {
                       {comentariosAMostrar.map((c) => {
                         const comentarioMio = String(c.usuario_id) === String(currentUserId);
                         const editandoEsteComm = editandoComentario?.comentario_id === c.comentario_id;
-
                         return (
                           <div key={c.comentario_id} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 group/comm">
                             {editandoEsteComm ? (
@@ -363,13 +392,10 @@ export default function ComunidadPage() {
 
         {/* ASIDE DERECHO */}
         <aside className="hidden lg:block lg:w-1/3 lg:sticky lg:top-10 space-y-6">
-          
-          {/* Nueva Publicación */}
           <SectionCard title="Nueva Publicación">
             <PostForm fields={comunidadFields} apiUrl="/api/comunidad" buttonText="Publicar Ahora" extraData={{ usuario_id: currentUserId }} onSuccess={() => { setHasMore(true); fetchPosts(true); }} />
           </SectionCard>
 
-          {/* Buscador de usuarios */}
           <SectionCard title="Buscar Usuarios">
             <div className="p-4 space-y-3">
               <div className="relative">
@@ -409,13 +435,11 @@ export default function ComunidadPage() {
               {busquedaUsuario.trim().length >= 2 && !buscando && resultadosBusqueda.length === 0 && (
                 <p className="text-slate-400 text-xs font-bold text-center py-4">No se encontraron usuarios</p>
               )}
-
               {busquedaUsuario.trim().length < 2 && busquedaUsuario.trim().length > 0 && (
                 <p className="text-slate-300 text-xs font-bold text-center py-2">Escribe al menos 2 caracteres</p>
               )}
             </div>
           </SectionCard>
-
         </aside>
       </div>
     </div>
