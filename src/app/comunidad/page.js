@@ -300,7 +300,27 @@ export default function ComunidadPage() {
                   ) : (
                     <>
                       <h4 className="text-xl font-black text-slate-900 mb-3">{post.titulo}</h4>
-                      <p className="text-slate-600 leading-relaxed mb-6 font-medium whitespace-pre-wrap">{post.contenido}</p>
+<p className="text-slate-600 leading-relaxed mb-6 font-medium whitespace-pre-wrap">{post.contenido}</p>
+
+{/* Imágenes del post */}
+{post.imagenes?.length > 0 && !editandoPost && (
+  <div className={`grid gap-2 mb-6 ${
+    post.imagenes.length === 1 ? 'grid-cols-1' : 
+    post.imagenes.length === 2 ? 'grid-cols-2' : 
+    'grid-cols-3'
+  }`}>
+    {post.imagenes.map((img) => (
+      <div key={img.imagen_id} className="rounded-2xl overflow-hidden border border-slate-100">
+        <img 
+          src={img.url_imagen} 
+          className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" 
+          alt=""
+          onClick={() => window.open(img.url_imagen, '_blank')}
+        />
+      </div>
+    ))}
+  </div>
+)}
                     </>
                   )}
 

@@ -23,6 +23,7 @@ export async function GET(request) {
     if (!posts || posts.length === 0) return NextResponse.json([]);
 
     const postIds = posts.map(p => p.publicacion_id);
+
     const [comentarios] = await pool.query(`
       SELECT c.*, u.nombre, u.pfp,
       (SELECT COUNT(*) FROM LikesComentario WHERE comentario_id = c.comentario_id) as totalLikes,
@@ -33,6 +34,13 @@ export async function GET(request) {
       ORDER BY c.fecha_comentario DESC
     `, [myId, postIds]);
 
+    // Cargar imágenes de los posts
+    const [imagenes] = await pool.query(`
+      SELECT * FROM Publicaciones_Imagenes 
+      WHERE publicacion_id IN (?)
+      ORDER BY publicacion_id, orden ASC
+    `, [postIds]);
+
     const data = posts.map(post => ({
       ...post,
       gema: post.gem_id ? {
@@ -40,6 +48,7 @@ export async function GET(request) {
         titulo: post.gem_titulo,
         descripcion: post.gem_descripcion,
       } : null,
+      imagenes: imagenes.filter(img => img.publicacion_id === post.publicacion_id),
       comentarios: comentarios.filter(c => c.publicacion_id === post.publicacion_id)
     }));
 
@@ -52,11 +61,11 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const { usuario_id, titulo, contenido, gema_id } = await request.json();
-    await pool.query(
+    const [result] = await pool.query(
       'INSERT INTO Publicaciones (usuario_id, titulo, contenido, gema_id) VALUES (?, ?, ?, ?)',
       [usuario_id, titulo, contenido, gema_id || null]
     );
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, publicacion_id: result.insertId });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
