@@ -11,12 +11,18 @@ export async function GET(request) {
   }
 
   try {
-    // 1. Datos básicos del curso + ESTADÍSTICAS GLOBALES REALES
+    // 1. Datos del curso + ESTADÍSTICAS + CATEGORÍAS (Modificado)
     const [cursoRows] = await pool.query(`
       SELECT 
         c.*, 
         u.nombre as nombre_autor,
-        -- Aseguramos que devuelva 0 si no hay registros
+        -- Traer categorías concatenadas
+        (
+          SELECT GROUP_CONCAT(cat.nombre SEPARATOR ', ')
+          FROM Curso_Categorias cc
+          JOIN Categorias cat ON cc.categoria_id = cat.categoria_id
+          WHERE cc.curso_id = c.curso_id
+        ) AS categorias,
         IFNULL((SELECT COUNT(DISTINCT usuario_id) FROM Inscripciones WHERE curso_id = c.curso_id), 0) as total_inscritos,
         IFNULL((SELECT COUNT(DISTINCT usuario_id) FROM Completaciones WHERE inscripcion_id IN 
           (SELECT inscripcion_id FROM Inscripciones WHERE curso_id = c.curso_id)
@@ -28,7 +34,7 @@ export async function GET(request) {
 
     if (cursoRows.length === 0) return NextResponse.json({ error: 'No existe' }, { status: 404 });
 
-    // 2. Consulta UNIFICADA (Archivos + Quizzes) - Se mantiene igual
+    // 2. Consulta UNIFICADA (Archivos + Quizzes)
     const [items] = await pool.query(`
       SELECT a.archivo_id AS id_contenido, a.nombre_archivo AS titulo, 'archivo' AS tipo, ac.orden,
       (SELECT COUNT(*) FROM Archivos_Vistos av WHERE av.archivo_id = a.archivo_id AND av.usuario_id = ? AND av.curso_id = ?) AS completado
@@ -40,13 +46,13 @@ export async function GET(request) {
       ORDER BY orden ASC
     `, [usuario_id, curso_id, curso_id, usuario_id, curso_id, curso_id]); 
 
-    // 3. Cálculo de Progreso del usuario actual
+    // 3. Cálculo de Progreso
     const totalItems = items.length;
     const completadosCount = items.filter(i => i.completado > 0).length;
     const porcentaje = totalItems > 0 ? Math.round((completadosCount / totalItems) * 100) : 0;
     const esCompletadoReal = porcentaje === 100 && totalItems > 0;
 
-    // 4. Inserción automática en Completaciones si aplica
+    // 4. Inserción automática en Completaciones
     if (esCompletadoReal) {
       await pool.query(`
         INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)

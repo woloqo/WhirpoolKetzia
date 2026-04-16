@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { 
   ArrowLeft, Play, CheckCircle2, Loader2, 
-  Users, BookOpen, FileText, Download, Award, ShieldCheck 
+  Users, BookOpen, FileText, Download, Award, ShieldCheck, Tag 
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -59,13 +59,11 @@ export default function CursoDetalle(props) {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         
-        {/* COLUMNA IZQUIERDA (1/3 -> 4 COL) */}
+        {/* COLUMNA IZQUIERDA */}
         <aside className="lg:col-span-4 space-y-8 lg:sticky lg:top-10">
           
           <SectionCard title="Detalles del Curso">
             <div className="p-4 space-y-6">
-              {/* Marco de la Imagen */}
-              
                 <div className="aspect-video w-full overflow-hidden rounded-[1.4rem]">
                   <img 
                     src={curso.imagenSrc || '/fallback.jpg'} 
@@ -78,10 +76,25 @@ export default function CursoDetalle(props) {
                 <PageHeader 
                   title={curso.titulo}
                 />
-                
+
                 <Text className="mb-8" variant='description'>
                   {curso.descripcion}
                 </Text>
+
+                {/* VISUALIZACIÓN DE CATEGORÍAS (TAGS) */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {curso.categorias ? curso.categorias.split(', ').map((cat, i) => (
+                    <span 
+                      key={i} 
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider border border-blue-100/50"
+                    >
+                      <Tag size={10} />
+                      {cat}
+                    </span>
+                  )) : (
+                    <span className="text-[10px] text-slate-300 italic font-bold">Sin categorías</span>
+                  )}
+                </div>
                 
                 <div className="flex items-center gap-4 bg-slate-50/80 p-4 rounded-2xl border border-slate-100/50">
                     <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">
@@ -91,7 +104,7 @@ export default function CursoDetalle(props) {
                       <Text variant="muted">Instructor Responsable</Text>
                       <p className="font-bold text-slate-700 leading-tight">{curso.nombre_autor}</p>
                     </div>
-                  </div>
+                </div>
 
                 <div className="space-y-6 pt-6 border-t border-slate-50">
                   <ProgressBar porcentaje={porcentaje} />
@@ -101,55 +114,52 @@ export default function CursoDetalle(props) {
             </div>
           </SectionCard>
 
-          {/* Tarjeta de Métricas de Impacto Global */}
-        <SectionCard 
-          variant="dark"
-          className="shadow-2xl shadow-slate-900/20"
-        >
-          <div className="p-4 space-y-4 relative overflow-hidden">
-            {/* Icono decorativo de fondo */}
-            <Users 
-              className="absolute -right-4 -bottom-4 opacity-10 text-white" 
-              size={120} 
-            />
+          {/* Tarjeta de Métricas */}
+          <SectionCard 
+            variant="dark"
+            className="shadow-2xl shadow-slate-900/20"
+          >
+            <div className="p-4 space-y-4 relative overflow-hidden">
+              <Users 
+                className="absolute -right-4 -bottom-4 opacity-10 text-white" 
+                size={120} 
+              />
 
-            <div className="space-y-4 relative z-10">
-              {/* Métrica: Inscritos */}
-              <div className="bg-white/10 p-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all hover:bg-white/15">
-                <div className="p-2 bg-blue-500/20 rounded-lg shrink-0">
-                  <Users size={20} className="text-blue-400" />
+              <div className="space-y-4 relative z-10">
+                <div className="bg-white/10 p-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all hover:bg-white/15">
+                  <div className="p-2 bg-blue-500/20 rounded-lg shrink-0">
+                    <Users size={20} className="text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-black leading-none text-white">
+                      {(curso?.total_inscritos || 0).toLocaleString()}
+                    </p>
+                    <Text variant="muted" className="text-slate-400 mt-1">
+                      Compañeros Inscritos
+                    </Text>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xl font-black leading-none text-white">
-                    {(curso?.total_inscritos || 0).toLocaleString()}
-                  </p>
-                  <Text variant="muted" className="text-slate-400 mt-1">
-                    Compañeros Inscritos
-                  </Text>
-                </div>
-              </div>
 
-              {/* Métrica: Graduados */}
-              <div className="bg-white/10 p-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all hover:bg-white/15">
-                <div className="p-2 bg-emerald-500/20 rounded-lg shrink-0">
-                  <CheckCircle2 size={20} className="text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-xl font-black leading-none text-white">
-                    {(curso?.total_graduados || 0).toLocaleString()}
-                  </p>
-                  <Text variant="muted" className="text-slate-400 mt-1">
-                    Ya han terminado
-                  </Text>
+                <div className="bg-white/10 p-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all hover:bg-white/15">
+                  <div className="p-2 bg-emerald-500/20 rounded-lg shrink-0">
+                    <CheckCircle2 size={20} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-black leading-none text-white">
+                      {(curso?.total_graduados || 0).toLocaleString()}
+                    </p>
+                    <Text variant="muted" className="text-slate-400 mt-1">
+                      Ya han terminado
+                    </Text>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </SectionCard>
+          </SectionCard>
 
         </aside>
 
-        {/* COLUMNA DERECHA (2/3 -> 8 COL) */}
+        {/* COLUMNA DERECHA */}
         <div className="lg:col-span-8 space-y-8">
           
           <SectionCard 

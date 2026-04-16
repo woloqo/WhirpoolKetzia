@@ -1,30 +1,22 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
-const handleUploadImage = async (file) => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Math.random()}.${fileExt}`; // Nombre aleatorio para evitar duplicados
-  const filePath = `${fileName}`;
-
-  const { data, error } = await supabase.storage
-    .from('portadas') // El nombre que pusiste en el paso 1
-    .upload(filePath, file);
-
-  if (error) throw error;
-
-  // Obtener la URL pública
-  const { data: { publicUrl } } = supabase.storage
-    .from('portadas')
-    .getPublicUrl(filePath);
-
-  return publicUrl;
-};
-
 export async function POST(request) {
   const connection = await pool.getConnection();
   
   try {
-    const { titulo, descripcion, descripcionCorta, imagenSrc, archivosSeleccionados, quizzesSeleccionados, creado_por, alumnosSeleccionados } = await request.json();
+    const body = await request.json();
+    const { 
+      titulo, 
+      descripcion, 
+      descripcionCorta, 
+      imagenSrc, 
+      archivosSeleccionados, 
+      quizzesSeleccionados, 
+      creado_por, 
+      alumnosSeleccionados,
+      categoriasSeleccionadas // <--- Capturamos las categorías del body
+    } = body;
 
     if (!titulo || !creado_por) {
       return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 });
@@ -39,7 +31,16 @@ export async function POST(request) {
     );
     const nuevoCursoId = cursoResult.insertId;
 
-    // 2. Vincular ARCHIVOS
+    // 2. Vincular CATEGORÍAS (Nueva lógica)
+    if (categoriasSeleccionadas?.length > 0) {
+      const valoresCategorias = categoriasSeleccionadas.map(cat_id => [nuevoCursoId, cat_id]);
+      await connection.query(
+        `INSERT INTO Curso_Categorias (curso_id, categoria_id) VALUES ?`,
+        [valoresCategorias]
+      );
+    }
+
+    // 3. Vincular ARCHIVOS
     if (archivosSeleccionados?.length > 0) {
       const valoresArchivos = archivosSeleccionados.map((id, index) => [nuevoCursoId, id, index + 1]);
       await connection.query(
@@ -48,7 +49,7 @@ export async function POST(request) {
       );
     }
 
-    // 3. Vincular QUIZZES
+    // 4. Vincular QUIZZES
     if (quizzesSeleccionados?.length > 0) {
       const offset = archivosSeleccionados?.length || 0;
       const valoresQuizzes = quizzesSeleccionados.map((id, index) => [nuevoCursoId, id, offset + index + 1]);
@@ -58,7 +59,7 @@ export async function POST(request) {
       );
     }
 
-    // 4. Inscribir ALUMNOS
+    // 5. Inscribir ALUMNOS
     if (alumnosSeleccionados?.length > 0) {
       const valoresAlumnos = alumnosSeleccionados.map(usuario_id => [usuario_id, nuevoCursoId]);
       await connection.query(

@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Plus, X, Loader2, Image as ImageIcon, Search, FileText, HelpCircle, ChevronUp, ChevronDown, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Loader2, Image as ImageIcon, Search, FileText, HelpCircle, ChevronUp, ChevronDown, Upload, Tag, Check } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase'; 
 
-// URL por defecto definida fuera del componente
 const DEFAULT_COURSE_IMAGE = "https://erarmlxcjcwpkxazijam.supabase.co/storage/v1/object/public/portadas/Curso%20sin%20portada.png";
 
 export default function NuevoCurso() {
@@ -14,13 +13,18 @@ export default function NuevoCurso() {
   const [loading, setLoading] = useState(false);
   const [archivosDisponibles, setArchivosDisponibles] = useState([]);
   const [quizzesDisponibles, setQuizzesDisponibles] = useState([]);
-  const [filtroBiblioteca, setFiltroBiblioteca] = useState('');
+  const [categoriasDisponibles, setCategoriasDisponibles] = useState([]);
   const [alumnosDisponibles, setAlumnosDisponibles] = useState([]);
-const [alumnosSeleccionados, setAlumnosSeleccionados] = useState([]);
-const [filtroAlumnos, setFiltroAlumnos] = useState('');
   
-  // Inicializamos previewUrl con la imagen default
+  const [filtroBiblioteca, setFiltroBiblioteca] = useState('');
+  const [alumnosSeleccionados, setAlumnosSeleccionados] = useState([]);
+  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState([]);
+  const [filtroAlumnos, setFiltroAlumnos] = useState('');
   const [previewUrl, setPreviewUrl] = useState(DEFAULT_COURSE_IMAGE);
+
+  // Estados para nueva categoría
+  const [creandoNuevaCat, setCreandoNuevaCat] = useState(false);
+  const [nombreNuevaCat, setNombreNuevaCat] = useState('');
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -35,21 +39,45 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
   useEffect(() => {
     if (localStorage.getItem('rol_id') !== '1' && localStorage.getItem('rol_id') !== '30001') return router.push('/');
 
-    fetch('/api/admin/archivos')
-      .then(res => res.json())
-      .then(data => setArchivosDisponibles(Array.isArray(data) ? data : []))
-      .catch(() => setArchivosDisponibles([]));
+    const fetchInitialData = async () => {
+        try {
+            const [resArchivos, resQuizzes, resUsuarios, resCats] = await Promise.all([
+                fetch('/api/admin/archivos'),
+                fetch('/api/admin/quizzes'),
+                fetch('/api/admin/usuarios'),
+                fetch('/api/admin/categorias')
+            ]);
+            
+            setArchivosDisponibles(await resArchivos.json());
+            setQuizzesDisponibles(await resQuizzes.json());
+            setAlumnosDisponibles(await resUsuarios.json());
+            setCategoriasDisponibles(await resCats.json());
+        } catch (e) { console.error("Error al cargar datos", e); }
+    };
 
-    fetch('/api/admin/quizzes')
-      .then(res => res.json())
-      .then(data => setQuizzesDisponibles(Array.isArray(data) ? data : []))
-      .catch(() => setQuizzesDisponibles([]));
-
-    fetch('/api/admin/usuarios')
-      .then(res => res.json())
-      .then(data => setAlumnosDisponibles(Array.isArray(data) ? data : []))
-      .catch(() => setAlumnosDisponibles([]));
+    fetchInitialData();
   }, [router]);
+
+  const handleCrearCategoria = async () => {
+    if (!nombreNuevaCat.trim()) return;
+    try {
+      const res = await fetch('/api/admin/categorias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nombreNuevaCat })
+      });
+      const nuevaCat = await res.json();
+      
+      if (res.ok) {
+        setCategoriasDisponibles([...categoriasDisponibles, nuevaCat]);
+        setCategoriasSeleccionadas([...categoriasSeleccionadas, nuevaCat.categoria_id]);
+        setNombreNuevaCat('');
+        setCreandoNuevaCat(false);
+      }
+    } catch (e) {
+      console.error("Error creando categoría:", e);
+    }
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -62,19 +90,16 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
   const uploadImage = async (file) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = fileName; 
-
-    const { error: uploadError } = await supabase.storage
-      .from('portadas')
-      .upload(filePath, file);
-
+    const { error: uploadError } = await supabase.storage.from('portadas').upload(fileName, file);
     if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('portadas')
-      .getPublicUrl(filePath);
-
+    const { data } = supabase.storage.from('portadas').getPublicUrl(fileName);
     return data.publicUrl;
+  };
+
+  const toggleCategoria = (id) => {
+    setCategoriasSeleccionadas(prev => 
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    );
   };
 
   const agregarItem = (id, tipo) => {
@@ -109,13 +134,9 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
     }
 
     try {
-      // Lógica de imagen: Si hay archivo se sube, si no se usa la default
       let finalImageUrl = DEFAULT_COURSE_IMAGE;
-
       if (formData.imagenFile) {
         finalImageUrl = await uploadImage(formData.imagenFile);
-      } else if (formData.imagenSrc) {
-        finalImageUrl = formData.imagenSrc;
       }
 
       const res = await fetch('/api/admin/cursos', {
@@ -124,15 +145,16 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
         body: JSON.stringify({ 
           ...formData, 
           imagenSrc: finalImageUrl, 
-          creado_por: usuario_id ,
-          alumnosSeleccionados
+          creado_por: usuario_id,
+          alumnosSeleccionados,
+          categoriasSeleccionadas
         }),
       });
 
-      const data = await res.json();
       if (res.ok) {
         router.push('/admin');
       } else {
+        const data = await res.json();
         alert(`Error: ${data.error || "No se pudo crear el curso"}`);
       }
     } catch (error) {
@@ -149,7 +171,7 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
   );
 
   return (
-    <div className="w-full min-h-screen font-sans p-6 lg:p-8">
+    <div className="w-full min-h-screen font-sans p-6 lg:p-8 bg-slate-50/30">
       
       <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
         <Link href="/admin" className="flex items-center gap-2 text-slate-400 hover:text-blue-600 font-bold transition-colors group">
@@ -174,16 +196,64 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
               placeholder="Ej: Introducción a IA"
             />
 
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Descripción Corta (Cards)</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Tags / Categorías</label>
+            <div className="flex flex-wrap gap-2 mb-5">
+                {categoriasDisponibles.map(cat => (
+                    <button
+                        key={cat.categoria_id}
+                        type="button"
+                        onClick={() => toggleCategoria(cat.categoria_id)}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                            categoriasSeleccionadas.includes(cat.categoria_id)
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
+                            : 'bg-white border-slate-200 text-slate-400 hover:border-blue-300'
+                        }`}
+                    >
+                        <Tag size={10} className="inline mr-1" />
+                        {cat.nombre}
+                    </button>
+                ))}
+
+                {/* BOTÓN / FORMULARIO NUEVA CATEGORÍA */}
+                {creandoNuevaCat ? (
+                  <div className="flex items-center gap-1 animate-in fade-in zoom-in duration-200">
+                    <input 
+                      autoFocus
+                      className="px-3 py-1.5 rounded-xl text-[10px] font-bold border border-blue-500 outline-none w-28"
+                      value={nombreNuevaCat}
+                      onChange={(e) => setNombreNuevaCat(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleCrearCategoria())}
+                      placeholder="Nombre..."
+                    />
+                    <button type="button" onClick={handleCrearCategoria} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      <Check size={12} />
+                    </button>
+                    <button type="button" onClick={() => setCreandoNuevaCat(false)} className="p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200">
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCreandoNuevaCat(true)}
+                    className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border border-dashed border-slate-300 text-slate-400 hover:border-blue-500 hover:text-blue-600 flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    Nueva
+                  </button>
+                )}
+            </div>
+
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Descripción Corta</label>
             <input 
               className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold mb-5 text-sm"
               value={formData.descripcionCorta}
               onChange={(e) => setFormData({...formData, descripcionCorta: e.target.value})}
-              placeholder="Resumen de 1 frase para la tarjeta"
+              placeholder="Resumen de 1 frase"
               maxLength={100}
             />
 
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Descripción</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Descripción Completa</label>
             <textarea 
               rows="5"
               className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm"
@@ -196,19 +266,17 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
           <div className="bg-white p-7 rounded-3xl border border-slate-100 shadow-sm">
             <h3 className="text-lg font-black text-slate-900 mb-4">Portada</h3>
             <div className="aspect-[16/10] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden mb-4 relative group">
-              {/* Siempre habrá una previewUrl porque se inicializa con la default */}
               <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
-              
               <label className="absolute inset-0 bg-blue-600/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer font-bold text-xs gap-2">
                 <Upload size={24} />
                 <span>Cambiar Imagen</span>
                 <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
               </label>
             </div>
-            <p className="text-[10px] text-slate-400 font-bold text-center italic">Si no seleccionas ninguna, se usará la imagen por defecto.</p>
           </div>
         </div>
 
+        {/* COLUMNA CENTRAL: ESTRUCTURA */}
         <div className="xl:col-span-5 space-y-6">
           <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-lg shadow-blue-50/20 min-h-[calc(100vh-200px)]">
             <div className="flex items-center justify-between mb-8">
@@ -241,11 +309,9 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
                       </div>
                       <span className="text-xs font-black text-blue-300">#{index+1}</span>
                       <FileText size={18} className="text-blue-500" />
-                      <p className="font-bold text-slate-800 text-sm">{archivo?.nombre_archivo}</p>
+                      <p className="font-bold text-slate-800 text-sm truncate max-w-[200px]">{archivo?.nombre_archivo}</p>
                     </div>
-                    <button type="button" onClick={() => quitarItem(id, 'archivo')} className="p-2 text-slate-400 hover:text-red-500">
-                      <X size={16} />
-                    </button>
+                    <button type="button" onClick={() => quitarItem(id, 'archivo')} className="p-2 text-slate-400 hover:text-red-500"><X size={16} /></button>
                   </div>
                 );
               })}
@@ -256,19 +322,13 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
                   <div key={`quiz-${id}`} className="flex items-center justify-between p-4 bg-purple-50 text-purple-900 border border-purple-100 rounded-2xl group">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button type="button" onClick={() => moverItem(index, -1, 'quiz')} disabled={index === 0} className="text-purple-300 hover:text-purple-600">
-                          <ChevronUp size={16} />
-                        </button>
-                        <button type="button" onClick={() => moverItem(index, 1, 'quiz')} disabled={index === formData.quizzesSeleccionados.length - 1} className="text-purple-300 hover:text-purple-600">
-                          <ChevronDown size={16} />
-                        </button>
+                        <button type="button" onClick={() => moverItem(index, -1, 'quiz')} disabled={index === 0} className="text-purple-300 hover:text-purple-600"><ChevronUp size={16} /></button>
+                        <button type="button" onClick={() => moverItem(index, 1, 'quiz')} disabled={index === formData.quizzesSeleccionados.length - 1} className="text-purple-300 hover:text-purple-600"><ChevronDown size={16} /></button>
                       </div>
                       <HelpCircle size={18} className="text-purple-600" />
-                      <p className="font-bold text-sm">{quiz?.titulo}</p>
+                      <p className="font-bold text-sm truncate max-w-[200px]">{quiz?.titulo}</p>
                     </div>
-                    <button type="button" onClick={() => quitarItem(id, 'quiz')} className="p-2 text-purple-400 hover:text-red-500">
-                      <X size={16} />
-                    </button>
+                    <button type="button" onClick={() => quitarItem(id, 'quiz')} className="p-2 text-purple-400 hover:text-red-500"><X size={16} /></button>
                   </div>
                 );
               })}
@@ -277,7 +337,7 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
         </div>
 
         <div className="xl:col-span-4 space-y-6">
-          <div className="bg-white p-7 rounded-3xl border border-slate-100 shadow-sm sticky top-8">
+          <div className="bg-white p-7 rounded-3xl border border-slate-100 shadow-sm">
             <h2 className="text-xl font-black text-slate-900 mb-5">Biblioteca Global</h2>
             <div className="relative mb-6">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -289,9 +349,9 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
               />
             </div>
 
-            <div className="max-h-[40vh] overflow-y-auto pr-2 space-y-2.5 mb-8">
+            <div className="max-h-[30vh] overflow-y-auto pr-2 space-y-2.5 mb-8">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Archivos</p>
-              {archivosFiltrados.length > 0 ? archivosFiltrados.map(archivo => (
+              {archivosFiltrados.map(archivo => (
                 <button
                   key={archivo.archivo_id}
                   type="button"
@@ -301,9 +361,7 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
                   <span className="text-xs font-bold truncate pr-4">{archivo.nombre_archivo}</span>
                   <Plus size={16} className="text-slate-300 group-hover:text-white shrink-0" />
                 </button>
-              )) : (
-                <p className="text-xs text-slate-400 font-medium text-center py-6">No hay archivos</p>
-              )}
+              ))}
             </div>
 
             <div className="mb-8">
@@ -318,83 +376,58 @@ const [filtroAlumnos, setFiltroAlumnos] = useState('');
                       onClick={() => agregarItem(quiz.quiz_id, 'quiz')}
                       className="w-full flex items-center justify-between p-4 border border-purple-100 bg-purple-50/30 hover:bg-purple-600 hover:text-white rounded-xl transition-all text-purple-700 group text-left"
                     >
-                      <span className="text-xs font-bold">{quiz.titulo}</span>
+                      <span className="text-xs font-bold truncate pr-4">{quiz.titulo}</span>
                       <Plus size={16} className="group-hover:text-white shrink-0" />
                     </button>
                   ))}
               </div>
             </div>
-            {/* ALUMNOS */}
-<div className="mb-8">
-  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">
-    Alumnos a inscribir
-  </p>
-  
-  {/* Buscador */}
-  <div className="relative mb-3">
-    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-    <input
-      type="text"
-      placeholder="Buscar alumno..."
-      className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-      onChange={(e) => setFiltroAlumnos(e.target.value)}
-    />
-  </div>
 
-  {/* Lista de alumnos disponibles */}
-  <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
-    {alumnosDisponibles
-      .filter(a => 
-        !alumnosSeleccionados.includes(a.value) &&
-        a.label.toLowerCase().includes(filtroAlumnos.toLowerCase())
-      )
-      .map(alumno => (
-        <button
-          key={alumno.value}
-          type="button"
-          onClick={() => setAlumnosSeleccionados([...alumnosSeleccionados, alumno.value])}
-          className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-emerald-600 hover:text-white rounded-xl transition-all group text-left"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-emerald-100 group-hover:bg-white/20 rounded-lg flex items-center justify-center font-black text-emerald-600 group-hover:text-white text-xs shrink-0">
-              {alumno.label?.[0]}
-            </div>
-            <span className="text-xs font-bold truncate">{alumno.label}</span>
-          </div>
-          <Plus size={14} className="text-slate-300 group-hover:text-white shrink-0" />
-        </button>
-      ))}
-  </div>
-
-  {/* Alumnos seleccionados */}
-  {alumnosSeleccionados.length > 0 && (
-    <div className="space-y-2">
-      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-1">
-        Seleccionados ({alumnosSeleccionados.length})
-      </p>
-      {alumnosSeleccionados.map(id => {
-        const alumno = alumnosDisponibles.find(a => a.value === id);
-        return (
-          <div key={id} className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-emerald-200 rounded-lg flex items-center justify-center font-black text-emerald-700 text-xs shrink-0">
-                {alumno?.label?.[0]}
+            <div className="mb-8 pt-6 border-t border-slate-100">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Inscribir Alumnos</p>
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Buscar alumno..."
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setFiltroAlumnos(e.target.value)}
+                />
               </div>
-              <span className="text-xs font-bold text-emerald-800 truncate">{alumno?.label}</span>
+              <div className="space-y-2 max-h-40 overflow-y-auto mb-3 pr-1">
+                {alumnosDisponibles
+                  .filter(a => !alumnosSeleccionados.includes(a.value) && a.label.toLowerCase().includes(filtroAlumnos.toLowerCase()))
+                  .map(alumno => (
+                    <button
+                      key={alumno.value}
+                      type="button"
+                      onClick={() => setAlumnosSeleccionados([...alumnosSeleccionados, alumno.value])}
+                      className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-emerald-600 hover:text-white rounded-xl transition-all group"
+                    >
+                      <span className="text-xs font-bold">{alumno.label}</span>
+                      <Plus size={14} className="text-slate-300 group-hover:text-white" />
+                    </button>
+                  ))}
+              </div>
+              
+              {alumnosSeleccionados.length > 0 && (
+                <div className="space-y-2">
+                    <p className="text-[10px] font-black text-emerald-600 uppercase mb-2">Seleccionados ({alumnosSeleccionados.length})</p>
+                    <div className="flex flex-wrap gap-2">
+                        {alumnosSeleccionados.map(id => {
+                            const alumno = alumnosDisponibles.find(a => a.value === id);
+                            return (
+                                <div key={id} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-[10px] font-bold">
+                                    {alumno?.label}
+                                    <button type="button" onClick={() => setAlumnosSeleccionados(alumnosSeleccionados.filter(a => a !== id))}><X size={12}/></button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => setAlumnosSeleccionados(alumnosSeleccionados.filter(a => a !== id))}
-              className="p-1 text-emerald-400 hover:text-red-500 transition-colors"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  )}
-</div>
+
             <button 
               type="submit"
               disabled={loading}
