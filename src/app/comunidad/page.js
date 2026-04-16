@@ -88,7 +88,7 @@ export default function ComunidadPage() {
     const timer = setTimeout(async () => {
       setBuscando(true);
       try {
-        const res = await fetch(`/api/usuarios/buscar?q=${busquedaUsuario}`);
+        const res = await fetch(`/api/usuario/buscar?q=${busquedaUsuario}`);
         const data = await res.json();
         const Fuse = (await import('fuse.js')).default;
         const fuse = new Fuse(data, { keys: ['nombre', 'alias'], threshold: 0.4, ignoreLocation: true });
