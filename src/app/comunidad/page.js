@@ -17,7 +17,10 @@ export default function ComunidadPage() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const limit = 5;
+  
   const isFetching = useRef(false);
+  const offsetRef = useRef(0);
+  const hasMoreRef = useRef(true);
 
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
@@ -34,33 +37,47 @@ export default function ComunidadPage() {
   const [filtroGemas, setFiltroGemas] = useState(false);
   const [filtroFecha, setFiltroFecha] = useState('reciente');
 
-  useEffect(() => {
-    const uid = localStorage.getItem('usuario_id');
-    if (uid) setCurrentUserId(uid);
-    fetchPosts(true, uid);
-  }, []);
-
-  const fetchPosts = useCallback(async (isInitial = false, uidOverride = null) => {
-    if (isFetching.current || (!isInitial && !hasMore)) return;
-    const uid = uidOverride || currentUserId;
+  const fetchPosts = useCallback(async (isInitial = false) => {
+    if (isFetching.current || (!isInitial && !hasMoreRef.current)) return;
+    
     isFetching.current = true;
-    const currentOffset = isInitial ? 0 : offset;
+    const uid = localStorage.getItem('usuario_id') || 0;
+    const currentOffset = isInitial ? 0 : offsetRef.current;
+    
     if (isInitial) setLoading(true);
     else setLoadingMore(true);
+
     try {
-      const res = await fetch(`/api/comunidad?limit=${limit}&offset=${currentOffset}&myId=${uid || 0}`);
+      // Si quieres comunidad global, NO envíes el usuario_id. 
+      // Si quieres solo tus posts, envíalo.
+      let url = `/api/comunidad?limit=${limit}&offset=${currentOffset}&myId=${uid}`;
+      
+      // OJO: Si aquí agregas &usuario_id=${uid}, siempre verás solo tus posts.
+      // Si quieres ver TODO, esta parte debe ser condicional.
+      
+      const res = await fetch(url);
       const newData = await res.json();
-      if (newData.length < limit) setHasMore(false);
+      
+      console.log(`DEBUG: offset=${currentOffset}, recibidos=${newData.length}`);
+
       if (isInitial) {
         setPosts(newData);
-        setOffset(limit);
+        hasMoreRef.current = newData.length === limit;
         setHasMore(newData.length === limit);
+        offsetRef.current = newData.length;
       } else {
-        setPosts(prev => {
-          const ids = new Set(prev.map(p => p.publicacion_id));
-          return [...prev, ...newData.filter(p => !ids.has(p.publicacion_id))];
-        });
-        setOffset(prev => prev + limit);
+        if (!newData || newData.length === 0) {
+          hasMoreRef.current = false;
+          setHasMore(false);
+        } else {
+          setPosts(prev => {
+            const ids = new Set(prev.map(p => String(p.publicacion_id)));
+            const nuevos = newData.filter(p => !ids.has(String(p.publicacion_id)));
+            return [...prev, ...nuevos];
+          });
+          offsetRef.current += newData.length;
+          hasMoreRef.current = newData.length === limit;
+        }
       }
     } catch (e) { console.error(e); }
     finally {
@@ -68,15 +85,30 @@ export default function ComunidadPage() {
       setLoadingMore(false);
       isFetching.current = false;
     }
-  }, [offset, hasMore, currentUserId]);
+  }, [limit]);
+
+  useEffect(() => {
+    const uid = localStorage.getItem('usuario_id');
+    if (uid) setCurrentUserId(uid);
+    fetchPosts(true, uid);
+  }, [fetchPosts]);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300) {
-        fetchPosts();
+      if (typeof window === "undefined") return;
+      
+      const scrollHeight = document.documentElement.scrollHeight;
+      const scrollPos = window.innerHeight + window.scrollY;
+      
+      // Sensibilidad aumentada a 400px
+      if (scrollHeight - scrollPos < 400) {
+        if (!isFetching.current && hasMoreRef.current) {
+          fetchPosts();
+        }
       }
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [fetchPosts]);
 
@@ -88,19 +120,15 @@ export default function ComunidadPage() {
     const timer = setTimeout(async () => {
       setBuscando(true);
       try {
-        const res = await fetch(`/api/usuario/buscar?q=${busquedaUsuario}`);
+        const res = await fetch(`/api/usuarios/buscar?q=${busquedaUsuario}`);
         const data = await res.json();
-        const Fuse = (await import('fuse.js')).default;
-        const fuse = new Fuse(data, { keys: ['nombre', 'alias'], threshold: 0.4, ignoreLocation: true });
-        const resultados = fuse.search(busquedaUsuario).map(r => r.item);
-        setResultadosBusqueda(resultados.length > 0 ? resultados : data);
+        setResultadosBusqueda(data);
       } catch (e) { console.error(e); }
       finally { setBuscando(false); }
     }, 400);
     return () => clearTimeout(timer);
   }, [busquedaUsuario]);
 
-  // Filtrado de posts
   const postsFiltrados = posts
     .filter(post => {
       if (filtroGemas && !post.gema) return false;
@@ -213,7 +241,6 @@ export default function ComunidadPage() {
     <div className="mx-auto p-6 lg:p-10 max-w-[1400px]">
       <PageHeader title="Comunidad Whirlpool" subtitle="Comparte tus dudas y avances con el equipo" icon={Users} />
 
-      {/* BUSCADOR DE POSTS */}
       <div className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 mb-8 flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
@@ -249,8 +276,6 @@ export default function ComunidadPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
-
-        {/* COLUMNA PRINCIPAL */}
         <div className="w-full lg:w-2/3 space-y-8">
           {loading ? (
             <div className="text-center p-20"><Loader2 className="animate-spin mx-auto text-blue-600" size={32} /></div>
@@ -290,7 +315,7 @@ export default function ComunidadPage() {
                 <div className="p-4 pt-2">
                   {editandoPost?.publicacion_id === post.publicacion_id ? (
                     <div className="space-y-3 bg-slate-50 p-4 rounded-2xl mb-6 border-2 border-blue-100 animate-in fade-in slide-in-from-top-1">
-                      <input className="w-full p-3 font-black text-slate-900 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 ring-blue-500" value={editandoPost.titulo} onChange={e => setEditandoPost({...editandoPost, titulo: e.target.value})} />
+                      <input className="w-full p-3 font-black text-slate-900 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 ring-blue-500" value={editandoPost.titulo || ""} onChange={e => setEditandoPost({...editandoPost, titulo: e.target.value})} />
                       <textarea className="w-full p-3 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 ring-blue-500 min-h-[120px] resize-none" value={editandoPost.contenido} onChange={e => setEditandoPost({...editandoPost, contenido: e.target.value})} />
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" onClick={() => setEditandoPost(null)} icon={X}>Cancelar</Button>
@@ -300,27 +325,26 @@ export default function ComunidadPage() {
                   ) : (
                     <>
                       <h4 className="text-xl font-black text-slate-900 mb-3">{post.titulo}</h4>
-<p className="text-slate-600 leading-relaxed mb-6 font-medium whitespace-pre-wrap">{post.contenido}</p>
+                      <p className="text-slate-600 leading-relaxed mb-6 font-medium whitespace-pre-wrap">{post.contenido}</p>
 
-{/* Imágenes del post */}
-{post.imagenes?.length > 0 && !editandoPost && (
-  <div className={`grid gap-2 mb-6 ${
-    post.imagenes.length === 1 ? 'grid-cols-1' : 
-    post.imagenes.length === 2 ? 'grid-cols-2' : 
-    'grid-cols-3'
-  }`}>
-    {post.imagenes.map((img) => (
-      <div key={img.imagen_id} className="rounded-2xl overflow-hidden border border-slate-100">
-        <img 
-          src={img.url_imagen} 
-          className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" 
-          alt=""
-          onClick={() => window.open(img.url_imagen, '_blank')}
-        />
-      </div>
-    ))}
-  </div>
-)}
+                      {post.imagenes?.length > 0 && (
+                        <div className={`grid gap-2 mb-6 ${
+                          post.imagenes.length === 1 ? 'grid-cols-1' : 
+                          post.imagenes.length === 2 ? 'grid-cols-2' : 
+                          'grid-cols-3'
+                        }`}>
+                          {post.imagenes.map((img) => (
+                            <div key={img.imagen_id} className="rounded-2xl overflow-hidden border border-slate-100">
+                              <img 
+                                src={img.url_imagen} 
+                                className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" 
+                                alt=""
+                                onClick={() => window.open(img.url_imagen, '_blank')}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -410,10 +434,9 @@ export default function ComunidadPage() {
           {loadingMore && <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>}
         </div>
 
-        {/* ASIDE DERECHO */}
         <aside className="hidden lg:block lg:w-1/3 lg:sticky lg:top-10 space-y-6">
           <SectionCard title="Nueva Publicación">
-            <PostForm fields={comunidadFields} apiUrl="/api/comunidad" buttonText="Publicar Ahora" extraData={{ usuario_id: currentUserId }} onSuccess={() => { setHasMore(true); fetchPosts(true); }} />
+            <PostForm fields={comunidadFields} apiUrl="/api/comunidad" buttonText="Publicar Ahora" extraData={{ usuario_id: currentUserId }} onSuccess={() => { hasMoreRef.current = true; fetchPosts(true); }} />
           </SectionCard>
 
           <SectionCard title="Buscar Usuarios">
@@ -450,13 +473,6 @@ export default function ComunidadPage() {
                     </Link>
                   ))}
                 </div>
-              )}
-
-              {busquedaUsuario.trim().length >= 2 && !buscando && resultadosBusqueda.length === 0 && (
-                <p className="text-slate-400 text-xs font-bold text-center py-4">No se encontraron usuarios</p>
-              )}
-              {busquedaUsuario.trim().length < 2 && busquedaUsuario.trim().length > 0 && (
-                <p className="text-slate-300 text-xs font-bold text-center py-2">Escribe al menos 2 caracteres</p>
               )}
             </div>
           </SectionCard>
