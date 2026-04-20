@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const usuarioId = searchParams.get('id');
@@ -22,10 +24,11 @@ export async function GET(request) {
          WHERE i.usuario_id = ?) as total_completados
     `, [usuarioId, usuarioId]);
 
-    // Cursos del usuario
+    // Cursos del usuario (con porcentaje simulado basado en estado)
     const [cursosRows] = await pool.query(`
       SELECT c.curso_id, c.titulo, c.imagenSrc, c.descripcionCorta, i.estado,
-        CASE WHEN comp.completacion_id IS NOT NULL THEN 1 ELSE 0 END as completado
+        CASE WHEN comp.completacion_id IS NOT NULL THEN 1 ELSE 0 END as completado,
+        CASE WHEN comp.completacion_id IS NOT NULL THEN 100 ELSE 50 END as porcentaje -- Simulación de porcentaje, ajusta según tu lógica real
       FROM Inscripciones i
       JOIN Cursos c ON i.curso_id = c.curso_id
       LEFT JOIN Completaciones comp ON comp.inscripcion_id = i.inscripcion_id
@@ -54,8 +57,6 @@ export async function PUT(request) {
       return NextResponse.json({ message: 'Datos insuficientes' }, { status: 400 });
     }
 
-    // Usamos una asignación directa sin COALESCE para permitir que el usuario 
-    // "borre" (set null) su alias o su foto de perfil.
     await pool.query(
       `UPDATE Usuarios SET alias = ?, pfp = ? WHERE usuario_id = ?`,
       [alias, pfp, usuario_id]
