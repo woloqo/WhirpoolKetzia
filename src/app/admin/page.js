@@ -281,12 +281,16 @@ const examenesFiltrados = searchExamenes.trim() === '' ? examenes : new Fuse(exa
         {/* STATS ASIDE */}
         <aside className="xl:col-span-4 space-y-6 sticky top-10">
           <SectionCard title="Estadísticas">
-            <div className={`p-6 space-y-8 ${isUpdating ? 'opacity-50 blur-[1px] pointer-events-none' : 'opacity-100'}`}>
+            <div className={`p-6 space-y-6 transition-all duration-300 ${isUpdating ? 'opacity-50 blur-[1px] pointer-events-none' : 'opacity-100'}`}>
+
+              {/* Selector de alumno */}
               <div>
                 <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">
                   <UserCircle size={14} className="text-blue-500" /> Seleccionar Alumno
                 </label>
-                <select value={selectedAlumno} onChange={(e) => { setSelectedAlumno(e.target.value); cargarDatos(e.target.value, false); }}
+                <select
+                  value={selectedAlumno}
+                  onChange={(e) => { setSelectedAlumno(e.target.value); cargarDatos(e.target.value, false); }}
                   className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 font-bold text-slate-700 cursor-pointer transition-all appearance-none"
                 >
                   <option value="global">Vista Global (Todos)</option>
@@ -294,17 +298,56 @@ const examenesFiltrados = searchExamenes.trim() === '' ? examenes : new Fuse(exa
                 </select>
               </div>
 
-              <Title className="justify-between">
-                {selectedAlumno === 'global' ? 'Rendimiento Global' : 'Rendimiento Individual'}
-                <TrendingUp size={20} className="text-blue-600" />
-              </Title>
-              
-              <div className="grid grid-cols-1 gap-4">
-                <StatCard icon={<BookOpen size={20} className="text-blue-600"/>} label={selectedAlumno === 'global' ? "Cursos Totales" : "Cursos Inscritos"} value={selectedAlumno === 'global' ? cursos.length : stats.totalCursos} color="bg-blue-50" />
-                <StatCard icon={<Users size={20} className="text-purple-600"/>} label="Alumnos" value={stats.totalAlumnos} color="bg-purple-50" />
-                <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Finalización" value={`${stats.tasaCompletado}%`} color="bg-green-50" progress={stats.tasaCompletado} />
-                <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio Quiz" value={`${stats.promedioQuiz} pts`} color="bg-orange-50" />
-              </div>
+              {selectedAlumno === 'global' ? (
+                /* ── VISTA GLOBAL ── */
+                <>
+                  <Title className="justify-between">
+                    Rendimiento Global <TrendingUp size={20} className="text-blue-600" />
+                  </Title>
+                  <div className="grid grid-cols-1 gap-4">
+                    <StatCard icon={<BookOpen size={20} className="text-blue-600"/>} label="Cursos Totales" value={cursos.length} color="bg-blue-50" />
+                    <StatCard icon={<Users size={20} className="text-purple-600"/>} label="Alumnos Activos" value={stats.totalAlumnos} color="bg-purple-50" />
+                    <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Tasa de Finalización" value={`${stats.tasaCompletado}%`} color="bg-green-50" progress={stats.tasaCompletado} />
+                    <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio Quiz" value={`${stats.promedioQuiz} pts`} color="bg-orange-50" />
+                  </div>
+                </>
+              ) : (
+                /* ── VISTA INDIVIDUAL ── */
+                <>
+                  {/* Tarjeta de perfil del alumno */}
+                  <div className="bg-slate-50 rounded-3xl p-5 flex items-center gap-4 border border-slate-100">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
+                      <UserCircle size={26} className="text-blue-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-slate-900 truncate">{stats.nombre || nombreAlumno}</p>
+                      <p className="text-xs text-slate-400 font-medium truncate">{stats.correo || '—'}</p>
+                    </div>
+                  </div>
+
+                  <Title className="justify-between">
+                    Rendimiento Individual <TrendingUp size={20} className="text-blue-600" />
+                  </Title>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <StatCard icon={<BookOpen size={20} className="text-blue-600"/>} label="Cursos Inscritos" value={stats.totalCursos} color="bg-blue-50" />
+                    <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Cursos Terminados" value={stats.cursosTerminados ?? '—'} color="bg-green-50" progress={stats.tasaCompletado} />
+                    <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio Quiz" value={stats.promedioQuiz ? `${stats.promedioQuiz} pts` : '—'} color="bg-orange-50" />
+                  </div>
+
+                  {/* Detalles extra */}
+                  <div className="bg-slate-50 rounded-3xl border border-slate-100 divide-y divide-slate-100 overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4">
+                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Intentos de Quiz</span>
+                      <span className="font-black text-slate-700">{stats.totalIntentos ?? '—'}</span>
+                    </div>
+                    <div className="flex items-center justify-between px-5 py-4">
+                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Mejor Puntaje</span>
+                      <span className="font-black text-slate-700">{stats.mejorPuntaje ? `${stats.mejorPuntaje} pts` : '—'}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </SectionCard>
         </aside>
