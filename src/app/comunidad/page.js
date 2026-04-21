@@ -395,11 +395,6 @@ export default function ComunidadPage() {
             }`}>
             <Gem size={14} /> Con gema
           </button>
-          <select value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)}
-            className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black text-slate-500 outline-none cursor-pointer shrink-0">
-            <option value="reciente">Más reciente</option>
-            <option value="antiguo">Más antiguo</option>
-          </select>
         </div>
 
         {showSearchResults && (

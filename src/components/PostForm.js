@@ -192,15 +192,7 @@ export default function PostForm({
           )}
 
           {/* Botones de adjuntar */}
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowGemaPicker(!showGemaPicker)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter text-blue-600 hover:text-blue-700 transition-colors py-1"
-            >
-              <Gem size={14} /> {showGemaPicker ? "Cerrar selección" : "Adjuntar gema"}
-            </button>
-
+          <div className="flex items-center justify-center gap-20">
             {imagenesSeleccionadas.length === 0 && (
               <button
                 type="button"
@@ -211,12 +203,13 @@ export default function PostForm({
               </button>
             )}
 
-            <a
-              href="/perfil"
-              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tighter text-slate-400 hover:text-blue-600 transition-colors py-1"
+            <button
+              type="button"
+              onClick={() => setShowGemaPicker(!showGemaPicker)}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter text-blue-600 hover:text-blue-700 transition-colors py-1"
             >
-              <Gem size={12} /> Nueva gema
-            </a>
+              <Gem size={14} /> {showGemaPicker ? "Cerrar selección" : "Adjuntar gema"}
+            </button>
           </div>
 
           <input
