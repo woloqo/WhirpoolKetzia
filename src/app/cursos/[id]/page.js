@@ -43,8 +43,11 @@ export default function CursoDetalle(props) {
   }, [id]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="animate-spin text-blue-600" size={40} />
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="animate-spin text-slate-300" size={36} />
+        <p className="text-slate-400 text-sm font-medium">Juntando tus materiales...</p>
+      </div>
     </div>
   );
 

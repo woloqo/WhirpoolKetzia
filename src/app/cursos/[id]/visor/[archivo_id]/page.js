@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowLeft, ExternalLink, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, CheckCircle, Loader2} from 'lucide-react';
 import Link from 'next/link';
 import { use } from 'react';
 
@@ -85,7 +85,14 @@ export default function VisorMaterial(props) {
     return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : null;
   };
 
-  if (loading) return <div className="p-10 text-center bg-slate-900 text-white h-screen flex items-center justify-center font-black uppercase tracking-widest animate-pulse">Cargando material...</div>;
+  if (loading){ return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="animate-spin text-slate-300" size={36} />
+        <p className="text-slate-400 text-sm font-medium">Descargando material...</p>
+      </div>
+    </div>
+  )}
   if (!archivo) return <div className="p-10 text-center">Material no encontrado</div>;
 
   const esYouTube = archivo.url_archivo.includes('youtube.com') || archivo.url_archivo.includes('youtu.be');

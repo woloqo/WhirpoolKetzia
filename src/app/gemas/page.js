@@ -140,8 +140,11 @@ export default function GemasPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20">
-          <Loader2 className="animate-spin mx-auto text-blue-600" size={32} />
+        <div className="flex items-center justify-center bg-white">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="animate-spin text-slate-300" size={36} />
+            <p className="text-slate-400 text-sm font-medium">Yendo al almacen de gemas...</p>
+          </div>
         </div>
       ) : gemesFiltradas.length === 0 ? (
         <div className="bg-white rounded-[2.5rem] p-16 text-center border border-slate-200">

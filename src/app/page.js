@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CursoCard from '@/components/CursoCard';
-import { ChevronDown, ChevronUp, CheckCircle2, BookOpen } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle2, BookOpen, Loader2 } from 'lucide-react';
 
 export default function Page() {
   const [cursos, setCursos] = useState([]);
@@ -55,9 +55,11 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="p-10 text-center flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-slate-500 font-medium">Obteniendo lista de cursos...</p>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin text-slate-300" size={36} />
+          <p className="text-slate-400 text-sm font-medium">Cargando tus cursos...</p>
+        </div>
       </div>
     );
   }

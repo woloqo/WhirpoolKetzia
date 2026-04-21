@@ -63,7 +63,14 @@ export default function QuizPage(props) {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
+  if (loading){ return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="animate-spin text-slate-300" size={36} />
+        <p className="text-slate-400 text-sm font-medium">Cargando quiz...</p>
+      </div>
+    </div>
+  )}
   if (!quiz) return <div className="p-20 text-center">Quiz no encontrado</div>;
 
   // Pantalla de Resultados

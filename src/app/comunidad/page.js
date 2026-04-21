@@ -417,8 +417,14 @@ export default function ComunidadPage() {
 
       <div className="flex flex-col lg:flex-row gap-8 justify-center items-start">
         <div className="w-full lg:max-w-[600px] lg:w-2/3 space-y-4">
+
           {loading ? (
-            <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-blue-600" size={32} /></div>
+            <div className="min-h-screen flex items-center justify-center bg-white">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="animate-spin text-slate-300" size={36} />
+                <p className="text-slate-400 text-sm font-medium">Yendo al almacen de posts..</p>
+              </div>
+            </div>
           ) : postsMostrados.length === 0 ? (
             <div className="bg-white rounded-2xl p-16 text-center border border-slate-100">
               <MessageSquare size={36} className="mx-auto text-slate-200 mb-3" />
@@ -434,7 +440,12 @@ export default function ComunidadPage() {
             ))
           )}
           {loadingMore && (
-            <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+            <div className="flex items-center justify-center bg-white">
+              <div className="flex flex-col items-center">
+                <Loader2 className="animate-spin text-slate-300" size={36} />
+                <p className="text-slate-400 text-sm font-medium">Yendo al almacen de posts..</p>
+              </div>
+            </div>
           )}
         </div>
 
