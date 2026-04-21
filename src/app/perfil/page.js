@@ -7,6 +7,7 @@ import {
   BookCheck, ChevronRight, Tag, Star
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { signOut } from 'next-auth/react';
 
 import { Button } from '@/components/Button';
 import { ResourceItem } from '@/components/ResourceItem';
@@ -84,6 +85,11 @@ export default function PerfilPage() {
   const [viewingPost, setViewingPost] = useState(null);
 
   const [currentUserId, setCurrentUserId] = useState(null);
+
+  const handleLogout = async () => {
+    localStorage.clear();
+    await signOut({ callbackUrl: '/login' });
+  };
 
   /* ── FETCH ────────────────────────────────── */
   const fetchGemas = async (uid) => {
@@ -357,7 +363,7 @@ export default function PerfilPage() {
                     <Pencil size={13} /> Editar perfil
                   </button>
                   <button
-                    onClick={() => { localStorage.clear(); router.push('/login'); }}
+                    onClick={() => handleLogout()}
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-400 text-xs font-black rounded-xl hover:text-red-500 hover:border-red-200 transition-all shadow-sm"
                   >
                     <LogOut size={13} />

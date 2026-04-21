@@ -53,7 +53,6 @@ export default function LoginPage() {
         localStorage.setItem('usuario_id', data.user.id.toString());
         localStorage.setItem('rol_id', data.user.rol.toString());
         localStorage.setItem('nombre_usuario', data.user.nombre);
-        // AGREGAR ESTA LÍNEA:
         localStorage.setItem('usuario_pfp', data.user.pfp || ''); 
         
         router.push('/');
