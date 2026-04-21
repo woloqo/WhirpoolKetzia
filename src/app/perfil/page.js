@@ -7,6 +7,24 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+// Componentes importados
+import { Button } from '@/components/Button';
+import CursoCard from '@/components/CursoCard';
+import { ResourceItem } from '@/components/ResourceItem';
+import { SectionCard } from '@/components/SectionCard';
+import { Title, Text } from '@/components/Typography';
+
+// Subcomponente para los Tabs (creado aquí para mantener el archivo limpio)
+const TabButton = ({ active, onClick, icon: Icon, label }) => (
+  <button 
+    onClick={onClick}
+    className={`flex flex-1 md:flex-none items-center justify-center gap-2 py-4 text-[12px] font-bold tracking-widest uppercase transition-colors relative ${active ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+  >
+    {active && <div className="absolute top-0 left-0 right-0 h-[1px] bg-slate-900"></div>}
+    <Icon size={14} /> <span className="hidden sm:inline">{label}</span>
+  </button>
+);
+
 export default function PerfilPage() {
   const [datos, setDatos] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -273,13 +291,13 @@ export default function PerfilPage() {
               <div className="flex gap-2 w-full md:w-auto justify-center">
                 {editMode ? (
                   <>
-                    <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 bg-blue-500 text-white font-semibold text-sm rounded-lg hover:bg-blue-600 transition-colors">Guardar</button>
-                    <button onClick={() => { setEditMode(false); setPreviewPfp(null); }} className="px-4 py-1.5 bg-slate-100 text-slate-900 font-semibold text-sm rounded-lg hover:bg-slate-200 transition-colors">Cancelar</button>
+                    <Button onClick={handleSave} loading={saving} variant="primary" className="py-1.5 px-4 text-xs font-semibold rounded-lg">Guardar</Button>
+                    <Button onClick={() => { setEditMode(false); setPreviewPfp(null); }} variant="ghost" className="py-1.5 px-4 text-xs font-semibold rounded-lg hover:bg-slate-200 transition-colors">Cancelar</Button>
                   </>
                 ) : (
                   <>
-                    <button onClick={() => setEditMode(true)} className="px-4 py-1.5 bg-slate-100 text-slate-900 font-semibold text-sm rounded-lg hover:bg-slate-200 transition-colors w-full md:w-auto">Editar perfil</button>
-                    <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="px-4 py-1.5 bg-slate-100 text-slate-900 font-semibold text-sm rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors w-full md:w-auto">Salir</button>
+                    <Button onClick={() => setEditMode(true)} variant="ghost" className="py-1.5 px-4 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-colors w-full md:w-auto">Editar perfil</Button>
+                    <Button onClick={() => { localStorage.clear(); router.push('/login'); }} variant="ghost" className="py-1.5 px-4 text-sm font-semibold rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors w-full md:w-auto">Salir</Button>
                   </>
                 )}
               </div>
@@ -303,6 +321,7 @@ export default function PerfilPage() {
               <div className="flex flex-col"><span className="font-semibold text-slate-900">{cursosTerminados.length}</span><span className="text-slate-500">cursos</span></div>
               <div className="flex flex-col"><span className="font-semibold text-slate-900">{gemas.length}</span><span className="text-slate-500">gemas</span></div>
             </div>
+            
           </div>
         </header>
 
@@ -369,7 +388,6 @@ export default function PerfilPage() {
           </div>
         )}
 
-        {/* PESTAÑA: GEMAS */}
         {activeTab === 'gemas' && (
           <div className="animate-in fade-in duration-300">
             <div className="flex justify-end mb-6">
@@ -385,7 +403,7 @@ export default function PerfilPage() {
                 <p className="text-sm">Comparte tu primer recurso con la comunidad.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="">
                 {gemas.map(g => (
                   <div key={g.gema_id} className="border border-slate-200 p-5 rounded-lg hover:shadow-md transition-shadow bg-white flex flex-col group">
                     <div className="flex items-center justify-between mb-3">
@@ -433,7 +451,7 @@ export default function PerfilPage() {
                       <img src={post.imagenes[0].url_imagen} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Post" />
                     ) : (
                       <div className="absolute inset-0 p-4 flex flex-col justify-center items-center bg-white">
-                        <p className="text-xs md:text-sm font-medium text-slate-700 line-clamp-4 md:line-clamp-6">{post.contenido}</p>
+                        <Text className="text-[10px] md:text-sm font-medium text-slate-700 line-clamp-4 md:line-clamp-6">{post.contenido}</Text>
                         {post.gema && <Gem size={14} className="text-slate-400 mt-2" />}
                       </div>
                     )}
@@ -543,7 +561,7 @@ export default function PerfilPage() {
                 {savingPost ? <Loader2 size={18} className="animate-spin" /> : "Actualizar"}
               </button>
             </div>
-          </div>
+          </SectionCard>
         </div>
       )}
     </div>
