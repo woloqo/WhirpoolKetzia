@@ -1,12 +1,11 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
-// Obtener materiales de un curso
 export async function GET(request, { params }) {
   const { id } = await params;
   try {
     const [rows] = await pool.query(`
-      SELECT a.*, ac.orden, ac.relacion_id
+      SELECT a.*, ac.orden, ac.relacion_id, ac.seccion_id
       FROM Archivos_Curso ac
       JOIN Archivos a ON ac.archivo_id = a.archivo_id
       WHERE ac.curso_id = ?
@@ -18,36 +17,28 @@ export async function GET(request, { params }) {
   }
 }
 
-// Agregar material a un curso
 export async function POST(request, { params }) {
   const { id } = await params;
   try {
-    const { archivo_id } = await request.json();
-
-    // Obtener el orden máximo actual
+    const { archivo_id, seccion_id } = await request.json();
     const [maxOrden] = await pool.query(
-      'SELECT MAX(orden) as maxOrden FROM Archivos_Curso WHERE curso_id = ?',
-      [id]
+      'SELECT MAX(orden) as maxOrden FROM Archivos_Curso WHERE curso_id = ?', [id]
     );
     const orden = (maxOrden[0].maxOrden || 0) + 1;
-
     await pool.query(
-      'INSERT INTO Archivos_Curso (curso_id, archivo_id, orden) VALUES (?, ?, ?)',
-      [id, archivo_id, orden]
+      'INSERT INTO Archivos_Curso (curso_id, archivo_id, orden, seccion_id) VALUES (?, ?, ?, ?)',
+      [id, archivo_id, orden, seccion_id || null]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// Eliminar material de un curso
 export async function DELETE(request, { params }) {
   const { id } = await params;
   const { searchParams } = new URL(request.url);
   const relacion_id = searchParams.get('relacion_id');
-
   try {
     await pool.query('DELETE FROM Archivos_Curso WHERE relacion_id = ? AND curso_id = ?', [relacion_id, id]);
     return NextResponse.json({ success: true });
@@ -56,15 +47,14 @@ export async function DELETE(request, { params }) {
   }
 }
 
-// Actualizar orden de materiales
 export async function PUT(request, { params }) {
   const { id } = await params;
   try {
     const { materiales } = await request.json();
     for (const m of materiales) {
       await pool.query(
-        'UPDATE Archivos_Curso SET orden = ? WHERE relacion_id = ? AND curso_id = ?',
-        [m.orden, m.relacion_id, id]
+        'UPDATE Archivos_Curso SET orden = ?, seccion_id = ? WHERE relacion_id = ? AND curso_id = ?',
+        [m.orden, m.seccion_id || null, m.relacion_id, id]
       );
     }
     return NextResponse.json({ success: true });

@@ -6,8 +6,7 @@ import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutGrid, User, LogOut, MessageSquare, ShieldCheck } from 'lucide-react';
-
+import { LayoutGrid, User, LogOut, MessageSquare, ShieldCheck, Gem } from 'lucide-react';
 export default function Sidebar({ colapsado }) {
   const [isMounted, setIsMounted] = useState(false);
   const [rolId, setRolId] = useState(null); 
@@ -82,6 +81,16 @@ export default function Sidebar({ colapsado }) {
           </div>
           {isActive('/comunidad') && <span className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-600 rounded-r-full" />}
         </Link>
+
+        <Link href="/gemas" className="relative flex items-center justify-center w-full group">
+  <div className={`flex items-center justify-center transition-all duration-300 rounded-2xl
+    ${colapsado ? 'w-10 h-10 lg:w-12 lg:h-12' : 'w-12 h-12 lg:w-16 lg:h-16'} 
+    ${isActive('/gemas') ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-slate-400 hover:bg-slate-100'}`}>
+    <Gem size={isActive('/gemas') || !colapsado ? 24 : 22} className="lg:hidden" />
+    <Gem size={colapsado ? 22 : 32} className="hidden lg:block" />
+  </div>
+  {isActive('/gemas') && <span className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-blue-600 rounded-r-full" />}
+</Link>
 
         <Link href="/perfil" className="relative flex items-center justify-center w-full group">
           <div className={`flex items-center justify-center transition-all duration-300 rounded-2xl
