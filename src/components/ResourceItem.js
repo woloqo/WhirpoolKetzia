@@ -1,5 +1,11 @@
 // components/ResourceItem.js
-export const ResourceItem = ({ title, subtitle, icon: Icon, action, variant = 'blue' }) => {
+export const ResourceItem = ({
+  title,
+  subtitle,
+  icon: Icon,
+  action,
+  variant = 'blue',
+}) => {
   const colors = {
     blue: "text-blue-600 bg-white",
     yellow: "bg-amber-50/40 border-amber-100",
@@ -8,17 +14,38 @@ export const ResourceItem = ({ title, subtitle, icon: Icon, action, variant = 'b
   };
 
   const theme = colors[variant] || colors.blue;
+  const isImage = typeof Icon === 'string';
 
   return (
-    <div className={`flex items-center justify-between p-3 md:p-6 border rounded-[1.2rem] md:rounded-[2rem] hover:shadow-md transition-all group gap-2 ${variant === 'blue' ? 'bg-white border-slate-100' : theme}`}>
-      
+    <div
+      className={`flex items-center justify-between p-3 md:p-6 border rounded-[1.2rem] md:rounded-[2rem] hover:shadow-md transition-all group gap-2 ${
+        variant === 'blue' ? 'bg-white border-slate-100' : theme
+      }`}
+    >
       <div className="flex items-center gap-2 md:gap-5 overflow-hidden">
-        {/* Icono: Súper compacto en móvil (p-2 y w-4) */}
-        <div className={`p-2 md:p-4 rounded-lg md:rounded-2xl shadow-sm shrink-0 ${variant === 'blue' ? 'bg-blue-50 text-blue-600' : theme}`}>
-          <Icon className="w-4 h-4 md:w-7 md:h-7" />
+        
+        {/* Icono */}
+        <div
+          className={`
+            ${isImage ? '' : 'p-2 md:p-4'}
+            w-8 h-8 md:w-14 md:h-14
+            rounded-lg md:rounded-2xl
+            shadow-sm shrink-0 overflow-hidden
+            ${variant === 'blue' ? 'bg-blue-50 text-blue-600' : theme}
+          `}
+        >
+          {isImage ? (
+            <img
+              src={Icon}
+              alt="icon"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Icon className="w-4 h-4 md:w-7 md:h-7" />
+          )}
         </div>
 
-        {/* Textos: Bajamos a text-xs (12px) y el subtítulo a 7px */}
+        {/* Textos */}
         <div className="overflow-hidden">
           <p className="font-black text-slate-900 text-xs md:text-xl leading-tight line-clamp-2 md:line-clamp-none">
             {title}
@@ -28,7 +55,8 @@ export const ResourceItem = ({ title, subtitle, icon: Icon, action, variant = 'b
           </p>
         </div>
       </div>
-        {action}
+
+      {action}
     </div>
   );
 };

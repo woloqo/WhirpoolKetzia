@@ -17,7 +17,8 @@ export default function RootLayout({ children }) {
     isQuiz: pathname.includes('/quiz/'),
     isComunidad: pathname === '/comunidad',
     isProfile: pathname === '/perfil',
-    isAdmin: pathname.includes('/admin', '/admin/')
+    isAdmin: pathname.includes('/admin', '/admin/'),
+    isGemas: pathname === '/gemas'
   };
 
   const nombresRutas = {
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
     '/comunidad': 'Comunidad',
     '/perfil': 'Mi Perfil',
     '/admin': 'Admin',
+    '/gemas': 'Gemas',
   };
 
   const tituloActual = nombresRutas[pathname] || 'Whirlpool Learning';
@@ -34,7 +36,7 @@ export default function RootLayout({ children }) {
   const mostrarSidebar = !configRutas.isLogin && !configRutas.isRegistro; 
   const mostrarChatbot = !configRutas.isLogin && !configRutas.isRegistro; 
   const mostrarHeader = !configRutas.isLogin && !configRutas.isVisor && !configRutas.isRegistro && !configRutas.isQuiz;
-  const colapsarSidebar = configRutas.isComunidad || configRutas.isVisor || configRutas.isProfile || configRutas.isAdmin || configRutas.isQuiz;
+  const colapsarSidebar = configRutas.isComunidad || configRutas.isVisor || configRutas.isProfile || configRutas.isAdmin || configRutas.isQuiz || configRutas.isGemas;
   
   const anchoSidebar = colapsarSidebar ? 'lg:pl-20' : 'lg:pl-32'; 
 
