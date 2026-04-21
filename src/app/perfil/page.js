@@ -7,6 +7,24 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
+// Componentes importados
+import { Button } from '@/components/Button';
+import CursoCard from '@/components/CursoCard';
+import { ResourceItem } from '@/components/ResourceItem';
+import { SectionCard } from '@/components/SectionCard';
+import { Title, Text } from '@/components/Typography';
+
+// Subcomponente para los Tabs (creado aquí para mantener el archivo limpio)
+const TabButton = ({ active, onClick, icon: Icon, label }) => (
+  <button 
+    onClick={onClick}
+    className={`flex flex-1 md:flex-none items-center justify-center gap-2 py-4 text-[12px] font-bold tracking-widest uppercase transition-colors relative ${active ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+  >
+    {active && <div className="absolute top-0 left-0 right-0 h-[1px] bg-slate-900"></div>}
+    <Icon size={14} /> <span className="hidden sm:inline">{label}</span>
+  </button>
+);
+
 export default function PerfilPage() {
   const [datos, setDatos] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,8 +32,7 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
-  // Estado de las pestañas ('cursos', 'gemas', 'publicaciones')
-  const [activeTab, setActiveTab] = useState('cursos');
+  const [activeTab, setActiveTab] = useState('publicaciones');
 
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [previewPfp, setPreviewPfp] = useState(null);
@@ -30,7 +47,6 @@ export default function PerfilPage() {
   const [editandoPost, setEditandoPost] = useState(null);
   const [savingPost, setSavingPost] = useState(false);
 
-  // NUEVO: Estado para los cursos reales
   const [cursos, setCursos] = useState([]);
 
   const fetchGemas = async (uid) => {
@@ -49,7 +65,6 @@ export default function PerfilPage() {
     } catch (e) { console.error(e); }
   };
 
-  // NUEVO: Función para obtener los cursos de la API
   const fetchCursos = async (uid) => {
     try {
       const res = await fetch(`/api/cursos?usuario_id=${uid}`);
@@ -68,7 +83,6 @@ export default function PerfilPage() {
       setNuevoNombre(data.usuario.alias || '');
       setLoading(false);
       
-      // Llamadas en paralelo a las demás APIs
       fetchGemas(usuarioId);
       fetchPosts(usuarioId);
       fetchCursos(usuarioId);
@@ -175,7 +189,6 @@ export default function PerfilPage() {
 
   const { usuario } = datos;
 
-  // NUEVO: Filtramos los cursos
   const cursosPendientes = cursos.filter(c => !c.completado);
   const cursosTerminados = cursos.filter(c => c.completado);
 
@@ -219,13 +232,13 @@ export default function PerfilPage() {
               <div className="flex gap-2 w-full md:w-auto justify-center">
                 {editMode ? (
                   <>
-                    <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 bg-blue-500 text-white font-semibold text-sm rounded-lg hover:bg-blue-600 transition-colors">Guardar</button>
-                    <button onClick={() => { setEditMode(false); setPreviewPfp(null); }} className="px-4 py-1.5 bg-slate-100 text-slate-900 font-semibold text-sm rounded-lg hover:bg-slate-200 transition-colors">Cancelar</button>
+                    <Button onClick={handleSave} loading={saving} variant="primary" className="py-1.5 px-4 text-xs font-semibold rounded-lg">Guardar</Button>
+                    <Button onClick={() => { setEditMode(false); setPreviewPfp(null); }} variant="ghost" className="py-1.5 px-4 text-xs font-semibold rounded-lg hover:bg-slate-200 transition-colors">Cancelar</Button>
                   </>
                 ) : (
                   <>
-                    <button onClick={() => setEditMode(true)} className="px-4 py-1.5 bg-slate-100 text-slate-900 font-semibold text-sm rounded-lg hover:bg-slate-200 transition-colors w-full md:w-auto">Editar perfil</button>
-                    <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="px-4 py-1.5 bg-slate-100 text-slate-900 font-semibold text-sm rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors w-full md:w-auto">Salir</button>
+                    <Button onClick={() => setEditMode(true)} variant="ghost" className="py-1.5 px-4 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-colors w-full md:w-auto">Editar perfil</Button>
+                    <Button onClick={() => { localStorage.clear(); router.push('/login'); }} variant="ghost" className="py-1.5 px-4 text-sm font-semibold rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors w-full md:w-auto">Salir</Button>
                   </>
                 )}
               </div>
@@ -246,125 +259,76 @@ export default function PerfilPage() {
               </a>
             </div>
             
-            <div className="flex md:hidden justify-between w-full mt-6 pt-4 border-t border-slate-200 text-center text-sm">
+            <div className="grid grid-cols-3 w-full mt-2 pt-2 border-t border-slate-200 text-center text-sm">
               <div className="flex flex-col"><span className="font-semibold text-slate-900">{posts.length}</span> <span className="text-slate-500">publicaciones</span></div>
               <div className="flex flex-col"><span className="font-semibold text-slate-900">{cursosTerminados.length}</span> <span className="text-slate-500">cursos</span></div>
               <div className="flex flex-col"><span className="font-semibold text-slate-900">{gemas.length}</span> <span className="text-slate-500">gemas</span></div>
             </div>
+            
           </div>
         </header>
 
         {/* --- 2. NAVEGACIÓN POR PESTAÑAS (TABS) --- */}
         <div className="flex justify-center md:gap-16 border-b border-slate-200 mb-8 relative -top-[1px]">
-          <button 
-            onClick={() => setActiveTab('cursos')}
-            className={`flex flex-1 md:flex-none items-center justify-center gap-2 py-4 text-[12px] font-bold tracking-widest uppercase transition-colors relative ${activeTab === 'cursos' ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            {activeTab === 'cursos' && <div className="absolute top-0 left-0 right-0 h-[1px] bg-slate-900"></div>}
-            <PlayCircle size={14} /> <span className="hidden sm:inline">Cursos</span>
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('gemas')}
-            className={`flex flex-1 md:flex-none items-center justify-center gap-2 py-4 text-[12px] font-bold tracking-widest uppercase transition-colors relative ${activeTab === 'gemas' ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            {activeTab === 'gemas' && <div className="absolute top-0 left-0 right-0 h-[1px] bg-slate-900"></div>}
-            <Gem size={14} /> <span className="hidden sm:inline">Gemas</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('publicaciones')}
-            className={`flex flex-1 md:flex-none items-center justify-center gap-2 py-4 text-[12px] font-bold tracking-widest uppercase transition-colors relative ${activeTab === 'publicaciones' ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            {activeTab === 'publicaciones' && <div className="absolute top-0 left-0 right-0 h-[1px] bg-slate-900"></div>}
-            <Grid size={14} /> <span className="hidden sm:inline">Publicaciones</span>
-          </button>
+          <TabButton active={activeTab === 'cursos'} onClick={() => setActiveTab('cursos')} icon={PlayCircle} label="Cursos" />
+          <TabButton active={activeTab === 'publicaciones'} onClick={() => setActiveTab('publicaciones')} icon={Grid} label="Publicaciones" />
+          <TabButton active={activeTab === 'gemas'} onClick={() => setActiveTab('gemas')} icon={Gem} label="Gemas" />
         </div>
 
         {/* --- 3. CONTENIDO DE LAS PESTAÑAS --- */}
         
-        {/* PESTAÑA: MIS CURSOS CON DATA REAL */}
         {activeTab === 'cursos' && (
           <div className="animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
               
-              {/* Columna: En Progreso */}
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-6 flex items-center gap-2 text-lg">
-                  <PlayCircle className="text-orange-500" size={20} /> Cursos Pendientes ({cursosPendientes.length})
-                </h3>
-                <div className="space-y-4">
-                  {cursosPendientes.length > 0 ? (
-                    cursosPendientes.map(curso => (
-                      <div key={curso.curso_id} className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                        <div className="w-12 h-12 bg-orange-50 text-orange-500 flex items-center justify-center rounded-lg shrink-0">
-                          <BookOpen size={20} />
-                        </div>
-                        <div className="flex-1 min-w-0 pr-2">
-                          <p className="font-medium text-slate-900 truncate" title={curso.titulo || curso.nombre}>{curso.titulo || curso.nombre}</p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-orange-400 rounded-full transition-all" style={{ width: `${curso.porcentaje}%` }}></div>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500">{curso.porcentaje}%</span>
-                          </div>
-                        </div>
-                        <button onClick={() => router.push(`/cursos/${curso.curso_id}`)} className="px-3 py-1.5 bg-blue-50 text-blue-600 font-semibold text-xs rounded-lg hover:bg-blue-100 transition-colors shrink-0">
-                          Ir
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500 italic p-4 border border-dashed border-slate-200 rounded-lg text-center">
-                      No tienes cursos en progreso.
-                    </p>
-                  )}
-                </div>
-              </div>
+              <SectionCard title="Cursos Pendientes" count={cursosPendientes.length} className="border-none shadow-none bg-transparent">
+                {cursosPendientes.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-6">
+                    {cursosPendientes.map(curso => (
+                      <CursoCard 
+                        key={curso.curso_id} 
+                        id={curso.curso_id} 
+                        titulo={curso.titulo || curso.nombre} 
+                        descripcionCorta={curso.descripcionCorta || "Curso en progreso"} 
+                        imagenSrc={curso.imagenSrc} 
+                        completado={false} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Text variant="muted" className="text-center py-8">No tienes cursos en progreso.</Text>
+                )}
+              </SectionCard>
 
-              {/* Columna: Completados */}
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-6 flex items-center gap-2 text-lg">
-                  <CheckCircle className="text-emerald-500" size={20} /> Cursos Terminados ({cursosTerminados.length})
-                </h3>
-                <div className="space-y-4">
-                  {cursosTerminados.length > 0 ? (
-                    cursosTerminados.map(curso => (
-                      <div key={curso.curso_id} className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg opacity-80 hover:opacity-100 transition-opacity">
-                        <div className="w-12 h-12 bg-emerald-50 text-emerald-500 flex items-center justify-center rounded-full shrink-0">
-                          <CheckCircle size={20} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900 truncate line-through decoration-slate-300" title={curso.titulo || curso.nombre}>{curso.titulo || curso.nombre}</p>
-                          <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Completado</p>
-                        </div>
-                        <button onClick={() => router.push(`/cursos/${curso.curso_id}`)} className="px-3 py-1.5 bg-slate-50 text-slate-600 font-semibold text-xs rounded-lg hover:bg-slate-100 transition-colors shrink-0">
-                          Repasar
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500 italic p-4 border border-dashed border-slate-200 rounded-lg text-center">
-                      Aún no has terminado ningún curso.
-                    </p>
-                  )}
-                </div>
-              </div>
+              <SectionCard title="Cursos Terminados" count={cursosTerminados.length} className="border-none shadow-none bg-transparent">
+                {cursosTerminados.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-6">
+                    {cursosTerminados.map(curso => (
+                      <CursoCard 
+                        key={curso.curso_id} 
+                        id={curso.curso_id} 
+                        titulo={curso.titulo || curso.nombre} 
+                        descripcionCorta={curso.descripcionCorta || "Curso completado con éxito"} 
+                        imagenSrc={curso.imagenSrc} 
+                        completado={true} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Text variant="muted" className="text-center py-8">Aún no has terminado ningún curso.</Text>
+                )}
+              </SectionCard>
 
             </div>
           </div>
         )}
 
-        {/* PESTAÑA: GEMAS */}
         {activeTab === 'gemas' && (
           <div className="animate-in fade-in duration-300">
             <div className="flex justify-end mb-6">
-              <button 
-                onClick={() => setShowGemaForm(true)} 
-                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white font-semibold text-sm rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <Plus size={16} /> Crear Gema
-              </button>
+              <Button onClick={() => setShowGemaForm(true)} icon={Plus} variant="dark" className="py-2 text-sm">
+                Crear Gema
+              </Button>
             </div>
             
             {gemas.length === 0 ? (
@@ -372,24 +336,20 @@ export default function PerfilPage() {
                 <div className="w-20 h-20 rounded-full border-2 border-slate-300 flex items-center justify-center mb-4">
                   <Gem size={32} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-medium text-slate-900 mb-2">No hay gemas</h3>
-                <p className="text-sm">Comparte tu primer recurso con la comunidad.</p>
+                <Title className="mb-2">No hay gemas</Title>
+                <Text variant="description">Comparte tu primer recurso con la comunidad.</Text>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="">
                 {gemas.map(g => (
-                  <div key={g.gema_id} className="border border-slate-200 p-5 rounded-lg hover:shadow-md transition-shadow bg-white flex flex-col">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-700 shrink-0">
-                        <Gem size={18} />
-                      </div>
-                      <h3 className="font-semibold text-slate-900 line-clamp-1">{g.titulo}</h3>
-                    </div>
-                    <p className="text-sm text-slate-600 line-clamp-3 mb-4 flex-grow">{g.descripcion}</p>
-                    <button className="text-xs font-semibold text-blue-500 hover:text-blue-700 uppercase tracking-widest text-left w-full mt-auto pt-3 border-t border-slate-100">
-                      Ver detalle
-                    </button>
-                  </div>
+                  <ResourceItem 
+                    key={g.gema_id}
+                    title={g.titulo}
+                    subtitle={g.descripcion}
+                    icon={Gem}
+                    variant="blue"
+                    action={<Button variant="pill">Ver detalle</Button>}
+                  />
                 ))}
               </div>
             )}
@@ -404,8 +364,8 @@ export default function PerfilPage() {
                 <div className="w-20 h-20 rounded-full border-2 border-slate-300 flex items-center justify-center mb-4">
                   <Camera size={32} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-medium text-slate-900 mb-2">Aún no hay publicaciones</h3>
-                <p>Sube tu primera publicación en la pestaña de Comunidad.</p>
+                <Title className="mb-2">Aún no hay publicaciones</Title>
+                <Text variant="description">Sube tu primera publicación en la pestaña de Comunidad.</Text>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-1 md:gap-2">
@@ -417,7 +377,7 @@ export default function PerfilPage() {
                       <img src={post.imagenes[0].url_imagen} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Post" />
                     ) : (
                       <div className="absolute inset-0 p-4 flex flex-col justify-center items-center bg-white">
-                        <p className="text-xs md:text-sm font-medium text-slate-700 line-clamp-4 md:line-clamp-6">{post.contenido}</p>
+                        <Text className="text-[10px] md:text-sm font-medium text-slate-700 line-clamp-4 md:line-clamp-6">{post.contenido}</Text>
                         {post.gema && <Gem size={14} className="text-slate-400 mt-2" />}
                       </div>
                     )}
@@ -436,12 +396,12 @@ export default function PerfilPage() {
 
                     {/* Botones Flotantes de Edición (Esquina superior derecha) */}
                     <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                      <button onClick={(e) => { e.stopPropagation(); setEditandoPost(post); }} className="p-2 bg-white rounded-full text-slate-700 hover:text-blue-600 shadow transition-colors">
+                      <Button variant="ghost" onClick={(e) => { e.stopPropagation(); setEditandoPost(post); }} className="p-2 bg-white rounded-full border-none shadow-sm transition-colors text-slate-700 hover:text-blue-600">
                         <Pencil size={14} />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleEliminarPost(post.publicacion_id); }} className="p-2 bg-white rounded-full text-slate-700 hover:text-red-600 shadow transition-colors">
+                      </Button>
+                      <Button variant="ghost" onClick={(e) => { e.stopPropagation(); handleEliminarPost(post.publicacion_id); }} className="p-2 bg-white rounded-full border-none shadow-sm transition-colors text-slate-700 hover:text-red-600">
                         <Trash2 size={14} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -457,66 +417,60 @@ export default function PerfilPage() {
       {/* Modal Añadir Gema */}
       {showGemaForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2"><Gem className="text-blue-500"/> Nueva Gema</h3>
-              <button onClick={() => setShowGemaForm(false)} className="text-slate-400 hover:text-slate-900 transition-colors p-1.5 bg-slate-100 rounded-full"><X size={18} /></button>
+          <SectionCard 
+            title="Nueva Gema" 
+            action={<Button variant="ghost" onClick={() => setShowGemaForm(false)} className="p-1.5 border-none rounded-full"><X size={18} /></Button>}
+            className="w-full max-w-md shadow-2xl"
+          >
+            <div className="p-4 space-y-4">
+              <input 
+                className="w-full p-4 rounded-xl border border-slate-200 font-medium text-sm outline-none focus:border-blue-500 bg-slate-50 transition-colors" 
+                placeholder="Título de la Gema" 
+                value={nuevaGema.titulo} 
+                onChange={e => setNuevaGema({...nuevaGema, titulo: e.target.value})} 
+                autoFocus
+              />
+              <textarea 
+                className="w-full p-4 rounded-xl border border-slate-200 text-sm min-h-[120px] outline-none focus:border-blue-500 bg-slate-50 resize-none transition-colors" 
+                placeholder="Descripción del recurso..." 
+                value={nuevaGema.descripcion} 
+                onChange={e => setNuevaGema({...nuevaGema, descripcion: e.target.value})} 
+              />
+              <Button loading={savingGema} onClick={handleCrearGema} className="w-full">
+                Guardar Gema
+              </Button>
             </div>
-            <input 
-              className="w-full p-3.5 rounded-lg mb-4 border border-slate-200 font-medium text-sm outline-none focus:border-slate-400 bg-slate-50 transition-colors" 
-              placeholder="Título de la Gema" 
-              value={nuevaGema.titulo} 
-              onChange={e => setNuevaGema({...nuevaGema, titulo: e.target.value})} 
-              autoFocus
-            />
-            <textarea 
-              className="w-full p-3.5 rounded-lg mb-6 border border-slate-200 text-sm min-h-[120px] outline-none focus:border-slate-400 bg-slate-50 resize-none transition-colors" 
-              placeholder="Descripción del recurso..." 
-              value={nuevaGema.descripcion} 
-              onChange={e => setNuevaGema({...nuevaGema, descripcion: e.target.value})} 
-            />
-            <button 
-              disabled={savingGema} 
-              className="w-full py-3 bg-blue-500 text-white font-semibold text-sm rounded-lg hover:bg-blue-600 transition-colors flex justify-center items-center" 
-              onClick={handleCrearGema}
-            >
-              {savingGema ? <Loader2 size={18} className="animate-spin" /> : "Guardar Gema"}
-            </button>
-          </div>
+          </SectionCard>
         </div>
       )}
 
       {/* Modal Editar Post */}
       {editandoPost && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2"><Edit3 className="text-blue-500"/> Editar Publicación</h3>
-              <button onClick={() => setEditandoPost(null)} className="text-slate-400 hover:text-slate-900 transition-colors p-1.5 bg-slate-100 rounded-full"><X size={18} /></button>
+          <SectionCard 
+            title="Editar Publicación" 
+            action={<Button variant="ghost" onClick={() => setEditandoPost(null)} className="p-1.5 border-none rounded-full"><X size={18} /></Button>}
+            className="w-full max-w-lg shadow-2xl"
+          >
+            <div className="p-4 space-y-4">
+              <input 
+                className="w-full p-4 border border-slate-200 rounded-xl text-sm bg-slate-50 outline-none focus:border-blue-500 transition-colors" 
+                value={editandoPost.titulo || ""} 
+                onChange={e => setEditandoPost({...editandoPost, titulo: e.target.value})} 
+                placeholder="Título (Opcional)"
+              />
+              <textarea 
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm min-h-[150px] resize-none transition-colors"
+                value={editandoPost.contenido}
+                onChange={(e) => setEditandoPost({...editandoPost, contenido: e.target.value})}
+                placeholder="Escribe tu contenido aquí..."
+              />
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setEditandoPost(null)} className="flex-1">Cancelar</Button>
+                <Button loading={savingPost} onClick={handleEditarPost} className="flex-1">Actualizar</Button>
+              </div>
             </div>
-            <input 
-              className="w-full p-3.5 border border-slate-200 rounded-lg text-sm mb-4 bg-slate-50 outline-none focus:border-slate-400 transition-colors" 
-              value={editandoPost.titulo || ""} 
-              onChange={e => setEditandoPost({...editandoPost, titulo: e.target.value})} 
-              placeholder="Título (Opcional)"
-            />
-            <textarea 
-              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-slate-400 text-sm min-h-[150px] resize-none mb-6 transition-colors"
-              value={editandoPost.contenido}
-              onChange={(e) => setEditandoPost({...editandoPost, contenido: e.target.value})}
-              placeholder="Escribe tu contenido aquí..."
-            />
-            <div className="flex gap-3">
-              <button className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-200 transition-colors" onClick={() => setEditandoPost(null)}>Cancelar</button>
-              <button 
-                disabled={savingPost} 
-                className="flex-1 py-3 bg-blue-500 text-white font-semibold text-sm rounded-lg hover:bg-blue-600 transition-colors flex justify-center items-center" 
-                onClick={handleEditarPost}
-              >
-                {savingPost ? <Loader2 size={18} className="animate-spin" /> : "Actualizar"}
-              </button>
-            </div>
-          </div>
+          </SectionCard>
         </div>
       )}
 
