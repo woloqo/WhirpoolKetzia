@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   User, Mail, Calendar, BookOpen, CheckCircle, LogOut, Save, X, 
-  Camera, Loader2, Gem, Plus, Trash2, Pencil, MessageSquare, Heart, Grid, PlayCircle
+  Camera, Loader2, Gem, Plus, Trash2, Pencil, MessageSquare, Heart, Grid, PlayCircle,
+  BookCheck
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -194,10 +195,10 @@ export default function PerfilPage() {
 
   return (
     <div className="bg-white min-h-screen pt-10 pb-32">
-      <div className="max-w-[935px] mx-auto px-4 sm:px-6">
+      <div className="max-w-[1100px] mx-auto px-4 sm:px-6">
         
         {/* --- 1. CABECERA ESTILO INSTAGRAM --- */}
-        <header className="flex flex-col md:flex-row items-center md:items-start md:gap-20 mb-10 pb-10 border-b border-slate-200">
+        <header className="flex flex-col md:flex-row items-center md:items-start md:gap-20 mb-5 ">
           
           <div className="shrink-0 mb-6 md:mb-0 relative group">
             <div className="w-36 h-36 md:w-40 md:h-40 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden ring-1 ring-slate-200">
@@ -219,7 +220,7 @@ export default function PerfilPage() {
             <div className="flex flex-col md:flex-row items-center gap-4 mb-5 w-full md:w-auto">
               {editMode ? (
                 <input
-                  className="text-xl md:text-xl text-slate-900 bg-slate-50 border border-slate-200 rounded-lg outline-none px-3 py-1.5 w-full md:w-auto focus:border-slate-400 transition-colors"
+                  className="text-xl md:text-xl text-slate-900 bg-slate-50 rounded-lg outline-none px-3 py-1.5 w-full md:w-auto focus:border-slate-400 transition-colors"
                   value={nuevoNombre}
                   onChange={(e) => setNuevoNombre(e.target.value)}
                   placeholder="Tu alias"
@@ -259,17 +260,14 @@ export default function PerfilPage() {
               </a>
             </div>
             
-            <div className="grid grid-cols-3 w-full mt-2 pt-2 border-t border-slate-200 text-center text-sm">
-              <div className="flex flex-col"><span className="font-semibold text-slate-900">{posts.length}</span> <span className="text-slate-500">publicaciones</span></div>
-              <div className="flex flex-col"><span className="font-semibold text-slate-900">{cursosTerminados.length}</span> <span className="text-slate-500">cursos</span></div>
-              <div className="flex flex-col"><span className="font-semibold text-slate-900">{gemas.length}</span> <span className="text-slate-500">gemas</span></div>
-            </div>
             
           </div>
         </header>
 
+            
+
         {/* --- 2. NAVEGACIÓN POR PESTAÑAS (TABS) --- */}
-        <div className="flex justify-center md:gap-16 border-b border-slate-200 mb-8 relative -top-[1px]">
+        <div className="flex justify-center md:gap-16 border-t border-b border-slate-200 mb-8 relative -top-[1px]">
           <TabButton active={activeTab === 'cursos'} onClick={() => setActiveTab('cursos')} icon={PlayCircle} label="Cursos" />
           <TabButton active={activeTab === 'publicaciones'} onClick={() => setActiveTab('publicaciones')} icon={Grid} label="Publicaciones" />
           <TabButton active={activeTab === 'gemas'} onClick={() => setActiveTab('gemas')} icon={Gem} label="Gemas" />
@@ -285,13 +283,13 @@ export default function PerfilPage() {
                 {cursosPendientes.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6">
                     {cursosPendientes.map(curso => (
-                      <CursoCard 
+                      <ResourceItem 
                         key={curso.curso_id} 
-                        id={curso.curso_id} 
-                        titulo={curso.titulo || curso.nombre} 
-                        descripcionCorta={curso.descripcionCorta || "Curso en progreso"} 
-                        imagenSrc={curso.imagenSrc} 
-                        completado={false} 
+                        title={curso.titulo || curso.nombre}
+                        subtitle={curso.descripcionCorta || "Curso en progreso"}
+                        icon={BookOpen}
+                        variant="blue"
+                        action={<Button variant="pill">Ver detalle</Button>}
                       />
                     ))}
                   </div>
@@ -304,13 +302,13 @@ export default function PerfilPage() {
                 {cursosTerminados.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6">
                     {cursosTerminados.map(curso => (
-                      <CursoCard 
+                      <ResourceItem 
                         key={curso.curso_id} 
-                        id={curso.curso_id} 
-                        titulo={curso.titulo || curso.nombre} 
-                        descripcionCorta={curso.descripcionCorta || "Curso completado con éxito"} 
-                        imagenSrc={curso.imagenSrc} 
-                        completado={true} 
+                        title={curso.titulo || curso.nombre}
+                        subtitle={curso.descripcionCorta || "Curso en progreso"}
+                        icon={BookCheck}
+                        variant="blue"
+                        action={<Button variant="pill">Ver detalle</Button>}
                       />
                     ))}
                   </div>
@@ -413,7 +411,6 @@ export default function PerfilPage() {
       </div>
 
       {/* --- MODALES FLOTANTES --- */}
-
       {/* Modal Añadir Gema */}
       {showGemaForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
