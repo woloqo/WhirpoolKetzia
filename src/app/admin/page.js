@@ -150,7 +150,7 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-10 font-sans">
+    <div className="max-w-[1800px] mx-auto p-6 lg:p-10 font-sans">
       <PageHeader title="Panel de Control" subtitle="Gestión de Capacitación Whirlpool" icon={ShieldCheck} />
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* STATS ASIDE */}
-        <aside className="xl:col-span-4 space-y-6 sticky top-10">
+        <aside className="xl:col-span-4 h-full overflow-y-auto pb-10">
           <SectionCard title="Estadísticas">
             <div className={`p-6 space-y-6 transition-all duration-300 ${isUpdating ? 'opacity-50 blur-[1px] pointer-events-none' : 'opacity-100'}`}>
 
@@ -366,7 +366,7 @@ export default function AdminDashboard() {
                       <UserCircle size={26} className="text-blue-600" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-black text-slate-900 truncate">{stats.nombre || nombreAlumno}</p>
+                      <p className="font-black text-slate-900 truncate">{stats.nombre}</p>
                       <p className="text-xs text-slate-400 font-medium truncate">{stats.correo || '—'}</p>
                     </div>
                   </div>

@@ -16,6 +16,20 @@ import Link from 'next/link';
  *   onPostUpdated  {fn}       Llamado con el post actualizado
  *   onPostDeleted  {fn}       Llamado con el publicacion_id eliminado
  */
+
+const InputComentario = ({ value, onChange, disabled }) => (
+  <input
+    value={value}
+    onChange={onChange}
+    onKeyDown={(e) => {
+      if (e.key === ' ') e.stopPropagation(); // evita scroll detrás
+    }}
+    placeholder="Agrega un comentario..."
+    disabled={disabled}
+    className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 disabled:opacity-50"
+  />
+);
+
 export default function PostViewer({
   post: initialPost,
   currentUserId: currentUserIdProp,
@@ -439,13 +453,11 @@ export default function PostViewer({
               : miNombre?.[0] || '?'
             }
           </div>
-          <input
-            value={nuevoComentario}
-            onChange={e => setNuevoComentario(e.target.value)}
-            placeholder="Agrega un comentario..."
-            disabled={enviandoComentario}
-            className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 disabled:opacity-50"
-          />
+            <InputComentario 
+                value={nuevoComentario}
+                onChange={(e) => setNuevoComentario(e.target.value)}
+                disabled={enviandoComentario}
+            />
           <button
             type="submit"
             disabled={!nuevoComentario.trim() || enviandoComentario}
@@ -485,7 +497,7 @@ export default function PostViewer({
             <img
               src={imagenes[activeImg]?.url_imagen}
               alt=""
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
             {imagenes.length > 1 && (
               <>
