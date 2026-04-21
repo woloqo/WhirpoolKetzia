@@ -10,7 +10,7 @@ export async function GET(request) {
   const limit = parseInt(searchParams.get('limit')) || 5;
   const offset = parseInt(searchParams.get('offset')) || 0;
   const myId = parseInt(searchParams.get('myId')) || 0;
-  const targetUserId = searchParams.get('usuario_id'); // Esto viene como string o null
+  const targetUserId = searchParams.get('usuario_id');
 
   try {
     let whereClause = "";
@@ -21,7 +21,6 @@ export async function GET(request) {
       queryParams.push(parseInt(targetUserId));
     }
 
-    // Ahora los parámetros para LIMIT y OFFSET van al final correctamente
     queryParams.push(limit, offset);
 
     const query = `
@@ -38,7 +37,6 @@ export async function GET(request) {
     `;
 
     const [posts] = await pool.query(query, queryParams);
-
     if (!posts || posts.length === 0) return NextResponse.json([]);
 
     const postIds = posts.map(p => p.publicacion_id);
@@ -59,12 +57,26 @@ export async function GET(request) {
       ORDER BY publicacion_id, orden ASC
     `, [postIds]);
 
+    // Cargar categorías de las gemas
+    const gemasIds = posts.filter(p => p.gem_id).map(p => p.gem_id);
+    let gemaCategorias = [];
+    if (gemasIds.length > 0) {
+      const [gcRows] = await pool.query(`
+        SELECT gc.gema_id, c.categoria_id, c.nombre
+        FROM Gema_Categorias gc
+        JOIN Categorias c ON gc.categoria_id = c.categoria_id
+        WHERE gc.gema_id IN (?)
+      `, [gemasIds]);
+      gemaCategorias = gcRows;
+    }
+
     const data = posts.map(post => ({
       ...post,
       gema: post.gem_id ? {
         gema_id: post.gem_id,
         titulo: post.gem_titulo,
         descripcion: post.gem_descripcion,
+        categorias: gemaCategorias.filter(gc => gc.gema_id === post.gem_id),
       } : null,
       imagenes: imagenes.filter(img => img.publicacion_id === post.publicacion_id),
       comentarios: comentarios.filter(c => c.publicacion_id === post.publicacion_id)

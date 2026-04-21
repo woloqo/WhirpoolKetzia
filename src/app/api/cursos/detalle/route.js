@@ -35,16 +35,21 @@ export async function GET(request) {
     if (cursoRows.length === 0) return NextResponse.json({ error: 'No existe' }, { status: 404 });
 
     // 2. Consulta UNIFICADA (Archivos + Quizzes)
-    const [items] = await pool.query(`
-      SELECT a.archivo_id AS id_contenido, a.nombre_archivo AS titulo, 'archivo' AS tipo, ac.orden,
-      (SELECT COUNT(*) FROM Archivos_Vistos av WHERE av.archivo_id = a.archivo_id AND av.usuario_id = ? AND av.curso_id = ?) AS completado
-      FROM Archivos_Curso ac JOIN Archivos a ON ac.archivo_id = a.archivo_id WHERE ac.curso_id = ?
-      UNION ALL
-      SELECT q.quiz_id AS id_contenido, q.titulo AS titulo, 'quiz' AS tipo, qc.orden,
-      (SELECT COUNT(*) FROM Quizzes_Completados qc_comp WHERE qc_comp.quiz_id = q.quiz_id AND qc_comp.usuario_id = ? AND qc_comp.curso_id = ?) AS completado
-      FROM Quiz_Curso qc JOIN Quizzes q ON qc.quiz_id = q.quiz_id WHERE qc.curso_id = ?
-      ORDER BY orden ASC
-    `, [usuario_id, curso_id, curso_id, usuario_id, curso_id, curso_id]); 
+    const [secciones] = await pool.query(
+  'SELECT * FROM Secciones WHERE curso_id = ? ORDER BY orden ASC',
+  [curso_id]
+);
+
+const [items] = await pool.query(`
+  SELECT a.archivo_id AS id_contenido, a.nombre_archivo AS titulo, 'archivo' AS tipo, ac.orden, ac.seccion_id,
+  (SELECT COUNT(*) FROM Archivos_Vistos av WHERE av.archivo_id = a.archivo_id AND av.usuario_id = ? AND av.curso_id = ?) AS completado
+  FROM Archivos_Curso ac JOIN Archivos a ON ac.archivo_id = a.archivo_id WHERE ac.curso_id = ?
+  UNION ALL
+  SELECT q.quiz_id AS id_contenido, q.titulo AS titulo, 'quiz' AS tipo, qc.orden, qc.seccion_id,
+  (SELECT COUNT(*) FROM Quizzes_Completados qc_comp WHERE qc_comp.quiz_id = q.quiz_id AND qc_comp.usuario_id = ? AND qc_comp.curso_id = ?) AS completado
+  FROM Quiz_Curso qc JOIN Quizzes q ON qc.quiz_id = q.quiz_id WHERE qc.curso_id = ?
+  ORDER BY orden ASC
+`, [usuario_id, curso_id, curso_id, usuario_id, curso_id, curso_id]);
 
     // 3. Cálculo de Progreso
     const totalItems = items.length;
@@ -65,6 +70,7 @@ export async function GET(request) {
     return NextResponse.json({
       curso: cursoRows[0],
       items,
+      secciones,
       porcentaje,
       esCompletado: esCompletadoReal
     });

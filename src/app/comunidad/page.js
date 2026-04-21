@@ -15,7 +15,6 @@ export default function ComunidadPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
   const limit = 5;
   
   const isFetching = useRef(false);
@@ -39,26 +38,15 @@ export default function ComunidadPage() {
 
   const fetchPosts = useCallback(async (isInitial = false) => {
     if (isFetching.current || (!isInitial && !hasMoreRef.current)) return;
-    
     isFetching.current = true;
     const uid = localStorage.getItem('usuario_id') || 0;
     const currentOffset = isInitial ? 0 : offsetRef.current;
-    
     if (isInitial) setLoading(true);
     else setLoadingMore(true);
 
     try {
-      // Si quieres comunidad global, NO envíes el usuario_id. 
-      // Si quieres solo tus posts, envíalo.
-      let url = `/api/comunidad?limit=${limit}&offset=${currentOffset}&myId=${uid}`;
-      
-      // OJO: Si aquí agregas &usuario_id=${uid}, siempre verás solo tus posts.
-      // Si quieres ver TODO, esta parte debe ser condicional.
-      
-      const res = await fetch(url);
+      const res = await fetch(`/api/comunidad?limit=${limit}&offset=${currentOffset}&myId=${uid}`);
       const newData = await res.json();
-      
-      console.log(`DEBUG: offset=${currentOffset}, recibidos=${newData.length}`);
 
       if (isInitial) {
         setPosts(newData);
@@ -72,8 +60,7 @@ export default function ComunidadPage() {
         } else {
           setPosts(prev => {
             const ids = new Set(prev.map(p => String(p.publicacion_id)));
-            const nuevos = newData.filter(p => !ids.has(String(p.publicacion_id)));
-            return [...prev, ...nuevos];
+            return [...prev, ...newData.filter(p => !ids.has(String(p.publicacion_id)))];
           });
           offsetRef.current += newData.length;
           hasMoreRef.current = newData.length === limit;
@@ -90,33 +77,22 @@ export default function ComunidadPage() {
   useEffect(() => {
     const uid = localStorage.getItem('usuario_id');
     if (uid) setCurrentUserId(uid);
-    fetchPosts(true, uid);
+    fetchPosts(true);
   }, [fetchPosts]);
 
   useEffect(() => {
     const handleScroll = () => {
       if (typeof window === "undefined") return;
-      
-      const scrollHeight = document.documentElement.scrollHeight;
-      const scrollPos = window.innerHeight + window.scrollY;
-      
-      // Sensibilidad aumentada a 400px
-      if (scrollHeight - scrollPos < 400) {
-        if (!isFetching.current && hasMoreRef.current) {
-          fetchPosts();
-        }
+      if (document.documentElement.scrollHeight - window.innerHeight - window.scrollY < 400) {
+        if (!isFetching.current && hasMoreRef.current) fetchPosts();
       }
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [fetchPosts]);
 
   useEffect(() => {
-    if (busquedaUsuario.trim().length < 2) {
-      setResultadosBusqueda([]);
-      return;
-    }
+    if (busquedaUsuario.trim().length < 2) { setResultadosBusqueda([]); return; }
     const timer = setTimeout(async () => {
       setBuscando(true);
       try {
@@ -143,10 +119,10 @@ export default function ComunidadPage() {
       }
       return true;
     })
-    .sort((a, b) => {
-      if (filtroFecha === 'reciente') return new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion);
-      return new Date(a.fecha_publicacion) - new Date(b.fecha_publicacion);
-    });
+    .sort((a, b) => filtroFecha === 'reciente'
+      ? new Date(b.fecha_publicacion) - new Date(a.fecha_publicacion)
+      : new Date(a.fecha_publicacion) - new Date(b.fecha_publicacion)
+    );
 
   const eliminarPost = async (id) => {
     if (!window.confirm("¿Eliminar publicación permanentemente?")) return;
@@ -241,6 +217,7 @@ export default function ComunidadPage() {
     <div className="mx-auto p-6 lg:p-10 max-w-[1400px]">
       <PageHeader title="Comunidad Whirlpool" subtitle="Comparte tus dudas y avances con el equipo" icon={Users} />
 
+      {/* BUSCADOR DE POSTS */}
       <div className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 mb-8 flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
@@ -276,6 +253,8 @@ export default function ComunidadPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
+
+        {/* COLUMNA PRINCIPAL */}
         <div className="w-full lg:w-2/3 space-y-8">
           {loading ? (
             <div className="text-center p-20"><Loader2 className="animate-spin mx-auto text-blue-600" size={32} /></div>
@@ -327,20 +306,15 @@ export default function ComunidadPage() {
                       <h4 className="text-xl font-black text-slate-900 mb-3">{post.titulo}</h4>
                       <p className="text-slate-600 leading-relaxed mb-6 font-medium whitespace-pre-wrap">{post.contenido}</p>
 
+                      {/* Imágenes */}
                       {post.imagenes?.length > 0 && (
                         <div className={`grid gap-2 mb-6 ${
                           post.imagenes.length === 1 ? 'grid-cols-1' : 
-                          post.imagenes.length === 2 ? 'grid-cols-2' : 
-                          'grid-cols-3'
+                          post.imagenes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
                         }`}>
                           {post.imagenes.map((img) => (
                             <div key={img.imagen_id} className="rounded-2xl overflow-hidden border border-slate-100">
-                              <img 
-                                src={img.url_imagen} 
-                                className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" 
-                                alt=""
-                                onClick={() => window.open(img.url_imagen, '_blank')}
-                              />
+                              <img src={img.url_imagen} className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" alt="" onClick={() => window.open(img.url_imagen, '_blank')} />
                             </div>
                           ))}
                         </div>
@@ -348,14 +322,26 @@ export default function ComunidadPage() {
                     </>
                   )}
 
+                  {/* Gema compartida con categorías */}
                   {post.gema && !editandoPost && (
                     <Link href={`/perfil/${post.usuario_id}`} className="block mb-6 group transition-all hover:scale-[1.01]">
-                      <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-100 rounded-2xl p-4 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm"><Gem size={22} /></div>
-                        <div className="flex-1">
+                      <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-100 rounded-2xl p-4 flex items-start gap-4">
+                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                          <Gem size={22} />
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <span className="text-[9px] font-black uppercase tracking-widest text-blue-500">Gema Compartida</span>
                           <h5 className="text-sm font-black text-slate-900">{post.gema.titulo}</h5>
-                          <p className="text-xs text-slate-500 line-clamp-1">{post.gema.descripcion}</p>
+                          <p className="text-xs text-slate-500 line-clamp-1 mb-2">{post.gema.descripcion}</p>
+                          {post.gema.categorias?.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {post.gema.categorias.map(cat => (
+                                <span key={cat.categoria_id} className="px-2 py-0.5 bg-blue-100 text-blue-600 text-[9px] font-black rounded-full uppercase tracking-wide">
+                                  {cat.nombre}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </Link>
@@ -434,6 +420,7 @@ export default function ComunidadPage() {
           {loadingMore && <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>}
         </div>
 
+        {/* ASIDE DERECHO */}
         <aside className="hidden lg:block lg:w-1/3 lg:sticky lg:top-10 space-y-6">
           <SectionCard title="Nueva Publicación">
             <PostForm fields={comunidadFields} apiUrl="/api/comunidad" buttonText="Publicar Ahora" extraData={{ usuario_id: currentUserId }} onSuccess={() => { hasMoreRef.current = true; fetchPosts(true); }} />
@@ -465,14 +452,19 @@ export default function ComunidadPage() {
                         {u.pfp ? <img src={u.pfp} className="w-full h-full object-cover" alt="" /> : u.nombre?.[0]}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-slate-900 text-sm truncate group-hover:text-blue-600 transition-colors">
-                          {u.alias || u.nombre}
-                        </p>
+                        <p className="font-black text-slate-900 text-sm truncate group-hover:text-blue-600 transition-colors">{u.alias || u.nombre}</p>
                         {u.alias && <p className="text-[10px] text-slate-400 font-medium truncate">{u.nombre}</p>}
                       </div>
                     </Link>
                   ))}
                 </div>
+              )}
+
+              {busquedaUsuario.trim().length >= 2 && !buscando && resultadosBusqueda.length === 0 && (
+                <p className="text-slate-400 text-xs font-bold text-center py-4">No se encontraron usuarios</p>
+              )}
+              {busquedaUsuario.trim().length < 2 && busquedaUsuario.trim().length > 0 && (
+                <p className="text-slate-300 text-xs font-bold text-center py-2">Escribe al menos 2 caracteres</p>
               )}
             </div>
           </SectionCard>
