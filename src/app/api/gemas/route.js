@@ -14,6 +14,22 @@ export async function GET(request) {
       'SELECT * FROM Gemas WHERE usuario_id = ? ORDER BY fecha_creacion DESC',
       [usuario_id]
     );
+
+    // Cargar categorías de cada gema
+    if (rows.length > 0) {
+      const gemaIds = rows.map(g => g.gema_id);
+      const [categorias] = await pool.query(`
+        SELECT gc.gema_id, c.categoria_id, c.nombre
+        FROM Gema_Categorias gc
+        JOIN Categorias c ON gc.categoria_id = c.categoria_id
+        WHERE gc.gema_id IN (?)
+      `, [gemaIds]);
+
+      rows.forEach(gema => {
+        gema.categorias = categorias.filter(c => c.gema_id === gema.gema_id);
+      });
+    }
+
     return NextResponse.json(rows);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,13 +38,12 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { usuario_id, titulo, descripcion } = await request.json();
+    const { usuario_id, titulo, descripcion, categorias } = await request.json();
 
     if (!usuario_id || !titulo || !descripcion) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
     }
 
-    // Verificar límite
     const [count] = await pool.query(
       'SELECT COUNT(*) as total FROM Gemas WHERE usuario_id = ?',
       [usuario_id]
@@ -42,7 +57,18 @@ export async function POST(request) {
       [usuario_id, titulo, descripcion]
     );
 
-    return NextResponse.json({ success: true, gema_id: result.insertId });
+    const gema_id = result.insertId;
+
+    // Guardar categorías si hay
+    if (categorias?.length > 0) {
+      const valores = categorias.map(cat_id => [gema_id, cat_id]);
+      await pool.query(
+        'INSERT INTO Gema_Categorias (gema_id, categoria_id) VALUES ?',
+        [valores]
+      );
+    }
+
+    return NextResponse.json({ success: true, gema_id });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -50,7 +76,7 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const { gema_id, usuario_id, titulo, descripcion } = await request.json();
+    const { gema_id, usuario_id, titulo, descripcion, categorias } = await request.json();
 
     if (!gema_id || !usuario_id || !titulo || !descripcion) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
@@ -60,6 +86,16 @@ export async function PUT(request) {
       'UPDATE Gemas SET titulo = ?, descripcion = ? WHERE gema_id = ? AND usuario_id = ?',
       [titulo, descripcion, gema_id, usuario_id]
     );
+
+    // Actualizar categorías — borrar las viejas y poner las nuevas
+    await pool.query('DELETE FROM Gema_Categorias WHERE gema_id = ?', [gema_id]);
+    if (categorias?.length > 0) {
+      const valores = categorias.map(cat_id => [gema_id, cat_id]);
+      await pool.query(
+        'INSERT INTO Gema_Categorias (gema_id, categoria_id) VALUES ?',
+        [valores]
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
