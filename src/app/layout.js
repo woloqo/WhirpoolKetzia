@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
     isVisor: pathname.includes('/visor/'),
     isQuiz: pathname.includes('/quiz/'),
     isComunidad: pathname === '/comunidad',
-    isProfile: pathname === '/perfil',
+    isProfile: pathname.includes('/perfil', '/perfil/'),
     isAdmin: pathname.includes('/admin', '/admin/'),
     isGemas: pathname === '/gemas'
   };
