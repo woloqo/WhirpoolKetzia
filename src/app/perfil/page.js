@@ -71,9 +71,11 @@ export default function PerfilPage() {
   const [filePfp, setFilePfp] = useState(null);
 
   const [gemas, setGemas] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [showGemaForm, setShowGemaForm] = useState(false);
   const [nuevaGema, setNuevaGema] = useState({ titulo: '', descripcion: '' });
   const [savingGema, setSavingGema] = useState(false);
+  const [editandoGema, setEditandoGema] = useState(null);
 
   const [posts, setPosts] = useState([]);
   const [cursos, setCursos] = useState([]);
@@ -89,6 +91,14 @@ export default function PerfilPage() {
       const res = await fetch(`/api/gemas?usuario_id=${uid}`);
       const data = await res.json();
       setGemas(Array.isArray(data) ? data : []);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchCategorias = async () => {
+    try {
+      const res = await fetch('/api/categorias');
+      const data = await res.json();
+      setCategorias(Array.isArray(data) ? data : []);
     } catch (e) { console.error(e); }
   };
 
@@ -118,6 +128,7 @@ export default function PerfilPage() {
       setDatos(data);
       setNuevoAlias(data.usuario.alias || '');
       fetchGemas(uid);
+      fetchCategorias();
       fetchPosts(uid);
       fetchCursos(uid);
     } catch (err) {
@@ -177,12 +188,51 @@ export default function PerfilPage() {
     setSavingGema(false);
   };
 
+  const handleEditarGema = async () => {
+    if (!editandoGema.titulo.trim() || !editandoGema.descripcion.trim()) return;
+    setSavingGema(true);
+    const userId = localStorage.getItem('usuario_id');
+    const categoriasIds = editandoGema.categorias.map(c => c.categoria_id || c);
+    const res = await fetch('/api/gemas', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        gema_id: editandoGema.gema_id, 
+        usuario_id: userId, 
+        titulo: editandoGema.titulo, 
+        descripcion: editandoGema.descripcion,
+        categorias: categoriasIds
+      }),
+    });
+    if (res.ok) { setEditandoGema(null); fetchGemas(userId); }
+    setSavingGema(false);
+  };
+
   const handleEliminarGema = async (gema_id) => {
     if (!window.confirm('¿Eliminar esta gema?')) return;
-    const uid = localStorage.getItem('usuario_id');
-    const res = await fetch(`/api/gemas?gema_id=${gema_id}&usuario_id=${uid}`, { method: 'DELETE' });
-    if (res.ok) fetchGemas(uid);
+    const userId = localStorage.getItem('usuario_id');
+    await fetch(`/api/gemas?gema_id=${gema_id}&usuario_id=${userId}`, { method: 'DELETE' });
+    fetchGemas(userId);
   };
+
+    const toggleCategoria = (cat_id, esNueva = true) => {
+    if (esNueva) {
+      setNuevaGema(prev => ({
+        ...prev,
+        categorias: prev.categorias.includes(cat_id)
+          ? prev.categorias.filter(c => c !== cat_id)
+          : [...prev.categorias, cat_id]
+      }));
+    } else {
+      setEditandoGema(prev => ({
+        ...prev,
+        categorias: prev.categorias.map(c => c.categoria_id || c).includes(cat_id)
+          ? prev.categorias.filter(c => (c.categoria_id || c) !== cat_id)
+          : [...prev.categorias, { categoria_id: cat_id }]
+      }));
+    }
+  };
+
 
   /* ── POSTS ────────────────────────────────── */
   const handlePostUpdated = (updated) => {
@@ -208,6 +258,32 @@ export default function PerfilPage() {
   const { usuario, stats } = datos;
   const cursosPendientes = cursos.filter(c => !c.completado);
   const cursosTerminados = cursos.filter(c => c.completado);
+
+  const SelectorCategorias = ({ seleccionadas = [], onToggle }) => (
+    <div className="mb-4">
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Categorías</p>
+      <div className="flex flex-wrap gap-2">
+        {categorias.map(cat => {
+          // Aseguramos que seleccionadas sea un array antes de hacer map
+          const ids = (Array.isArray(seleccionadas) ? seleccionadas : []).map(c => c.categoria_id || c);
+          const activa = ids.includes(cat.categoria_id);
+          return (
+            <button
+              key={cat.categoria_id}
+              type="button"
+              onClick={() => onToggle(cat.categoria_id)}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                activa ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {cat.nombre}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
 
   return (
     <div className="bg-white min-h-screen pb-32">
@@ -512,38 +588,24 @@ export default function PerfilPage() {
       )}
 
         {/* ── TAB: GEMAS ─────────────────────────────────── */}
+        
+        {/* PESTAÑA: GEMAS */}
         {activeTab === 'gemas' && (
           <div className="animate-in fade-in duration-300">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-xs text-slate-400 font-medium">
-                {gemas.length}/10 gemas creadas
-              </p>
-              {gemas.length < 10 && (
-                <button
-                  onClick={() => setShowGemaForm(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-xs font-black rounded-xl hover:bg-blue-600 transition-all"
-                >
-                  <Plus size={13} /> Nueva Gema
-                </button>
-              )}
+            <div className="flex justify-end mb-6">
+              <button onClick={() => setShowGemaForm(true)} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white font-semibold text-sm rounded-lg hover:bg-slate-800 transition-colors">
+                <Plus size={16} /> Crear Gema
+              </button>
             </div>
-
+            
             {gemas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center mb-4">
-                  <Gem size={28} strokeWidth={1.2} className="text-slate-300" />
-                </div>
-                <p className="text-slate-500 font-bold text-sm mb-1">Sin gemas aún</p>
-                <p className="text-slate-300 text-xs mb-6">Documenta tus habilidades y logros</p>
-                <button
-                  onClick={() => setShowGemaForm(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-xs font-black rounded-xl hover:bg-blue-600 transition-all"
-                >
-                  <Plus size={13} /> Crear mi primera gema
-                </button>
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                <div className="w-20 h-20 rounded-full border-2 border-slate-300 flex items-center justify-center mb-4"><Gem size={32} strokeWidth={1.5} /></div>
+                <h3 className="text-xl font-medium text-slate-900 mb-2">No hay gemas</h3>
+                <p className="text-sm">Comparte tu primer recurso con la comunidad.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {gemas.map((gema, i) => (
                   <div
                     key={gema.gema_id}
@@ -558,12 +620,10 @@ export default function PerfilPage() {
                           <Gem size={18} className="text-white" />
                         </div>
                         {/* Botón eliminar */}
-                        <button
-                          onClick={() => handleEliminarGema(gema.gema_id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setEditandoGema({...gema, categorias: gema.categorias || []})} className="p-1.5 text-slate-400 hover:text-blue-500 transition-colors"><Pencil size={14} /></button>
+                          <button onClick={() => handleEliminarGema(gema.gema_id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                        </div>
                       </div>
 
                       <h3 className="font-black text-slate-900 text-sm mb-1.5 leading-tight">{gema.titulo}</h3>
@@ -589,57 +649,78 @@ export default function PerfilPage() {
             )}
           </div>
         )}
+
       </div>
-
-      {/* ── MODAL: NUEVA GEMA ──────────────────────────────── */}
+{/* MODAL: CREAR GEMA */}
       {showGemaForm && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-                  <Gem size={16} className="text-white" />
-                </div>
-                <h3 className="font-black text-slate-900">Nueva Gema</h3>
-              </div>
-              <button
-                onClick={() => setShowGemaForm(false)}
-                className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all"
-              >
-                <X size={16} />
-              </button>
-            </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Título</label>
-                <input
-                  autoFocus
-                  className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  placeholder="Ej: Gema que resume texto"
-                  value={nuevaGema.titulo}
-                  onChange={e => setNuevaGema({ ...nuevaGema, titulo: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Descripción</label>
-                <textarea
-                  className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px] resize-none transition-all"
-                  placeholder="Promt generado para la gema..."
-                  value={nuevaGema.descripcion}
-                  onChange={e => setNuevaGema({ ...nuevaGema, descripcion: e.target.value })}
-                />
-              </div>
-              <button
-                onClick={handleCrearGema}
-                disabled={savingGema || !nuevaGema.titulo.trim() || !nuevaGema.descripcion.trim()}
-                className="w-full py-3.5 bg-slate-900 text-white font-black text-sm rounded-2xl hover:bg-blue-600 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                {savingGema ? <Loader2 size={16} className="animate-spin" /> : <Gem size={16} />}
-                Guardar Gema
-              </button>
+        
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2"><Gem className="text-blue-500"/> Nueva Gema</h3>
+              <button onClick={() => { setShowGemaForm(false); setNuevaGema({ titulo: '', descripcion: '', categorias: [] }); }} className="text-slate-400 hover:text-slate-900 p-1.5 bg-slate-100 rounded-full"><X size={18} /></button>
             </div>
+            <input 
+              className="w-full p-3.5 rounded-lg mb-4 border border-slate-200 font-medium text-sm outline-none focus:border-slate-400 bg-slate-50 transition-colors" 
+              placeholder="Título de la Gema" 
+              value={nuevaGema.titulo} 
+              onChange={e => setNuevaGema({...nuevaGema, titulo: e.target.value})} 
+              autoFocus
+            />
+            <textarea 
+              className="w-full p-3.5 rounded-lg mb-4 border border-slate-200 text-sm min-h-[100px] outline-none focus:border-slate-400 bg-slate-50 resize-none transition-colors" 
+              placeholder="Descripción del recurso..." 
+              value={nuevaGema.descripcion} 
+              onChange={e => setNuevaGema({...nuevaGema, descripcion: e.target.value})} 
+            />
+            <SelectorCategorias 
+              seleccionadas={nuevaGema.categorias} 
+              onToggle={(id) => toggleCategoria(id, true)} 
+            />
+            <button 
+              disabled={savingGema} 
+              className="w-full py-3 bg-blue-500 text-white font-semibold text-sm rounded-lg hover:bg-blue-600 transition-colors flex justify-center items-center mt-2" 
+              onClick={handleCrearGema}
+            >
+              {savingGema ? <Loader2 size={18} className="animate-spin" /> : "Guardar Gema"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR GEMA */}
+      {editandoGema && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2"><Gem className="text-blue-500"/> Editar Gema</h3>
+              <button onClick={() => setEditandoGema(null)} className="text-slate-400 hover:text-slate-900 p-1.5 bg-slate-100 rounded-full"><X size={18} /></button>
+            </div>
+            <input 
+              className="w-full p-3.5 rounded-lg mb-4 border border-slate-200 font-medium text-sm outline-none focus:border-slate-400 bg-slate-50 transition-colors" 
+              placeholder="Título de la Gema" 
+              value={editandoGema.titulo} 
+              onChange={e => setEditandoGema({...editandoGema, titulo: e.target.value})} 
+              autoFocus
+            />
+            <textarea 
+              className="w-full p-3.5 rounded-lg mb-4 border border-slate-200 text-sm min-h-[100px] outline-none focus:border-slate-400 bg-slate-50 resize-none transition-colors" 
+              placeholder="Descripción..." 
+              value={editandoGema.descripcion} 
+              onChange={e => setEditandoGema({...editandoGema, descripcion: e.target.value})} 
+            />
+            <SelectorCategorias 
+              seleccionadas={editandoGema.categorias || []} 
+              onToggle={(id) => toggleCategoria(id, false)} 
+            />
+            <button 
+              disabled={savingGema} 
+              className="w-full py-3 bg-blue-500 text-white font-semibold text-sm rounded-lg hover:bg-blue-600 transition-colors flex justify-center items-center mt-2" 
+              onClick={handleEditarGema}
+            >
+              {savingGema ? <Loader2 size={18} className="animate-spin" /> : "Guardar Cambios"}
+            </button>
           </div>
         </div>
       )}
