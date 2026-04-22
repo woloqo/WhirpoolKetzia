@@ -6,30 +6,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-/**
- * PostViewer — Modal estilo Instagram para ver un post completo.
- *
- * Props:
- *   post           {object}   El objeto post a mostrar (de /api/comunidad)
- *   currentUserId  {string}   ID del usuario autenticado
- *   onClose        {fn}       Llamado al cerrar el modal
- *   onPostUpdated  {fn}       Llamado con el post actualizado
- *   onPostDeleted  {fn}       Llamado con el publicacion_id eliminado
- */
-
-const InputComentario = ({ value, onChange, disabled }) => (
-  <input
-    value={value}
-    onChange={onChange}
-    onKeyDown={(e) => {
-      if (e.key === ' ') e.stopPropagation(); // evita scroll detrás
-    }}
-    placeholder="Agrega un comentario..."
-    disabled={disabled}
-    className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 disabled:opacity-50"
-  />
-);
-
 export default function PostViewer({
   post: initialPost,
   currentUserId: currentUserIdProp,
@@ -44,6 +20,7 @@ export default function PostViewer({
   const [enviandoComentario, setEnviandoComentario] = useState(false);
   const [editandoComentario, setEditandoComentario] = useState(null);
   const commEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   const [editandoPost, setEditandoPost] = useState(false);
   const [editTitulo, setEditTitulo] = useState(post.titulo || '');
@@ -53,16 +30,13 @@ export default function PostViewer({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Leer currentUserId de la prop o del localStorage directamente como fallback
   const currentUserId = String(
     currentUserIdProp ||
     (typeof window !== 'undefined' ? localStorage.getItem('usuario_id') : '') ||
     ''
   );
 
-  // Comparar siempre como strings para evitar 1 !== "1"
   const esMio = Boolean(currentUserId && String(post.usuario_id) === currentUserId);
-
   const imagenes = post.imagenes || [];
   const comentarios = post.comentarios || [];
   const tieneImagenes = imagenes.length > 0;
@@ -139,16 +113,15 @@ export default function PostViewer({
           comentario_id: data.comentario_id,
           contenido: nuevoComentario,
           fecha_comentario: new Date().toISOString(),
-          nombre,
-          pfp,
-          totalLikes: 0,
-          iLiked: 0,
+          nombre, pfp,
+          totalLikes: 0, iLiked: 0,
           usuario_id: currentUserId,
         };
         const updated = { ...post, comentarios: [...comentarios, nuevo] };
         setPost(updated);
         onPostUpdated?.(updated);
         setNuevoComentario('');
+        setTimeout(() => inputRef.current?.focus(), 50);
       }
     } finally {
       setEnviandoComentario(false);
@@ -191,7 +164,7 @@ export default function PostViewer({
     }
   };
 
-  /* ── EDITAR / ELIMINAR POST ─────────────────────────────── */
+  /* ── POST EDITAR / ELIMINAR ─────────────────────────────── */
   const handleGuardarPost = async () => {
     setSavingPost(true);
     const res = await fetch('/api/comunidad', {
@@ -216,24 +189,25 @@ export default function PostViewer({
   const handleEliminarPost = async () => {
     if (!window.confirm('¿Eliminar esta publicación permanentemente?')) return;
     const res = await fetch(`/api/comunidad?id=${post.publicacion_id}&uid=${currentUserId}`, { method: 'DELETE' });
-    if (res.ok) {
-      onPostDeleted?.(post.publicacion_id);
-      onClose();
-    }
+    if (res.ok) { onPostDeleted?.(post.publicacion_id); onClose(); }
   };
 
   /* ── HELPERS ────────────────────────────────────────────── */
   const formatFecha = (fecha) =>
     new Date(fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-
   const formatHora = (fecha) =>
     new Date(fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
   const miPfp = typeof window !== 'undefined' ? localStorage.getItem('usuario_pfp') : null;
   const miNombre = typeof window !== 'undefined' ? localStorage.getItem('nombre_usuario') : '?';
 
-  /* ── COLUMNA DERECHA ────────────────────────────────────── */
-  const RightColumn = () => (
+  /* ─────────────────────────────────────────────────────────
+     PANEL DE COMENTARIOS
+     Rendered as a JSX variable (NOT a sub-component) so the
+     <input> is never re-mounted on state changes, preventing
+     the focus-loss-on-keystroke bug.
+  ───────────────────────────────────────────────────────── */
+  const commentsPanel = (
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* HEADER */}
@@ -258,7 +232,6 @@ export default function PostViewer({
           </Link>
           <p className="text-[10px] text-slate-400 font-medium">{formatFecha(post.fecha_publicacion)}</p>
         </div>
-
         {esMio && (
           <div className="relative shrink-0" ref={menuRef}>
             <button
@@ -304,10 +277,7 @@ export default function PostViewer({
               onChange={e => setEditContenido(e.target.value)}
             />
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setEditandoPost(false)}
-                className="px-3 py-1.5 text-xs font-black text-slate-500 hover:text-slate-700 transition-colors"
-              >
+              <button onClick={() => setEditandoPost(false)} className="px-3 py-1.5 text-xs font-black text-slate-500 hover:text-slate-700 transition-colors">
                 Cancelar
               </button>
               <button
@@ -322,12 +292,8 @@ export default function PostViewer({
           </div>
         ) : (
           <div>
-            {post.titulo && (
-              <p className="font-black text-slate-900 text-sm mb-1 leading-tight">{post.titulo}</p>
-            )}
-            {post.contenido && (
-              <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{post.contenido}</p>
-            )}
+            {post.titulo && <p className="font-black text-slate-900 text-sm mb-1 leading-tight">{post.titulo}</p>}
+            {post.contenido && <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{post.contenido}</p>}
             {post.gema && (
               <div className="mt-3 flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
                 <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
@@ -336,9 +302,7 @@ export default function PostViewer({
                 <div className="min-w-0">
                   <p className="text-[9px] font-black uppercase text-blue-400 leading-none mb-0.5">Gema compartida</p>
                   <p className="text-xs font-bold text-slate-800 truncate">{post.gema.titulo}</p>
-                  {post.gema.descripcion && (
-                    <p className="text-[10px] text-slate-400 truncate">{post.gema.descripcion}</p>
-                  )}
+                  {post.gema.descripcion && <p className="text-[10px] text-slate-400 truncate">{post.gema.descripcion}</p>}
                 </div>
               </div>
             )}
@@ -355,7 +319,6 @@ export default function PostViewer({
             <p className="text-[10px] text-slate-300 mt-0.5">Sé el primero en responder</p>
           </div>
         )}
-
         {comentarios.map(c => {
           const esMiComentario = String(c.usuario_id) === currentUserId;
           const editandoEste = editandoComentario?.comentario_id === c.comentario_id;
@@ -381,12 +344,8 @@ export default function PostViewer({
                       onChange={e => setEditandoComentario({ ...editandoComentario, contenido: e.target.value })}
                       onKeyDown={e => e.key === 'Enter' && handleGuardarComentario()}
                     />
-                    <button onClick={handleGuardarComentario} className="text-blue-600 hover:text-blue-700 shrink-0">
-                      <Check size={15} />
-                    </button>
-                    <button onClick={() => setEditandoComentario(null)} className="text-slate-400 hover:text-slate-600 shrink-0">
-                      <X size={15} />
-                    </button>
+                    <button onClick={handleGuardarComentario} className="text-blue-600 hover:text-blue-700 shrink-0"><Check size={15} /></button>
+                    <button onClick={() => setEditandoComentario(null)} className="text-slate-400 hover:text-slate-600 shrink-0"><X size={15} /></button>
                   </div>
                 ) : (
                   <>
@@ -446,22 +405,27 @@ export default function PostViewer({
           <p className="ml-auto text-[10px] text-slate-300 font-medium">{formatFecha(post.fecha_publicacion)}</p>
         </div>
 
-        <form onSubmit={handleEnviarComentario} className="flex items-center gap-2 px-4 py-2.5">
+        {/* INPUT — always inline, never extracted as a sub-component */}
+        <form onSubmit={handleEnviarComentario} className="flex items-center gap-2 px-4 py-3">
           <div className="w-7 h-7 rounded-full overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center text-blue-600 font-bold text-[10px] border border-slate-200">
             {miPfp
               ? <img src={miPfp} className="w-full h-full object-cover" alt="" />
               : miNombre?.[0] || '?'
             }
           </div>
-            <InputComentario 
-                value={nuevoComentario}
-                onChange={(e) => setNuevoComentario(e.target.value)}
-                disabled={enviandoComentario}
-            />
+          <input
+            ref={inputRef}
+            value={nuevoComentario}
+            onChange={e => setNuevoComentario(e.target.value)}
+            onKeyDown={e => { if (e.key === ' ') e.stopPropagation(); }}
+            placeholder="Agrega un comentario..."
+            disabled={enviandoComentario}
+            className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 disabled:opacity-50 min-w-0"
+          />
           <button
             type="submit"
             disabled={!nuevoComentario.trim() || enviandoComentario}
-            className="text-blue-600 hover:text-blue-700 font-black text-xs disabled:opacity-30 transition-all"
+            className="text-blue-600 hover:text-blue-700 font-black text-xs disabled:opacity-30 transition-all shrink-0"
           >
             {enviandoComentario ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
           </button>
@@ -473,7 +437,7 @@ export default function PostViewer({
   /* ── RENDER ─────────────────────────────────────────────── */
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <button
@@ -484,62 +448,72 @@ export default function PostViewer({
       </button>
 
       {tieneImagenes ? (
-        /* ── CON IMAGEN: dos columnas, imagen 3:4 vertical ── */
-        <div
-          className="flex bg-white rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
-          style={{ height: '85vh', width: 'min(960px, 95vw)' }}
-        >
-          {/* Columna imagen: ancho = altura * 3/4 */}
+        <>
+          {/* ── MOBILE: bottom sheet, image hidden, comments only ── */}
           <div
-            className="relative bg-slate-950 shrink-0 flex items-center justify-center overflow-hidden"
-            style={{ width: 'calc(85vh * 0.75)' }}
+            className="sm:hidden w-full bg-white rounded-t-[2rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300"
+            style={{ height: '85dvh' }}
           >
-            <img
-              src={imagenes[activeImg]?.url_imagen}
-              alt=""
-              className="w-full h-full object-contain"
-            />
-            {imagenes.length > 1 && (
-              <>
-                <button
-                  onClick={() => setActiveImg(i => Math.max(0, i - 1))}
-                  disabled={activeImg === 0}
-                  className="absolute left-2 w-8 h-8 bg-black/30 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-0"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  onClick={() => setActiveImg(i => Math.min(imagenes.length - 1, i + 1))}
-                  disabled={activeImg === imagenes.length - 1}
-                  className="absolute right-2 w-8 h-8 bg-black/30 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-0"
-                >
-                  <ChevronRight size={18} />
-                </button>
-                <div className="absolute bottom-3 flex gap-1.5">
-                  {imagenes.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveImg(i)}
-                      className={`h-1.5 rounded-full transition-all ${i === activeImg ? 'bg-white w-4' : 'bg-white/50 w-1.5'}`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+            {commentsPanel}
           </div>
 
-          {/* Columna derecha: toma el espacio restante */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <RightColumn />
+          {/* ── DESKTOP: side-by-side, image col is 4:3 of modal height ── */}
+          <div
+            className="hidden sm:flex bg-white rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+            style={{ height: '85vh', maxWidth: '95vw' }}
+          >
+            {/* Image: bg-black so letterboxing shows as black bars (4:3 ratio) */}
+            <div
+              className="relative bg-black shrink-0 flex items-center justify-center overflow-hidden"
+              style={{ width: 'calc(85vh * 3 / 4)' }}
+            >
+              <img
+                src={imagenes[activeImg]?.url_imagen}
+                alt=""
+                className="w-full h-full object-contain"
+              />
+              {imagenes.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setActiveImg(i => Math.max(0, i - 1))}
+                    disabled={activeImg === 0}
+                    className="absolute left-2 w-8 h-8 bg-black/30 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-0"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => setActiveImg(i => Math.min(imagenes.length - 1, i + 1))}
+                    disabled={activeImg === imagenes.length - 1}
+                    className="absolute right-2 w-8 h-8 bg-black/30 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all disabled:opacity-0"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                  <div className="absolute bottom-3 flex gap-1.5">
+                    {imagenes.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveImg(i)}
+                        className={`h-1.5 rounded-full transition-all ${i === activeImg ? 'bg-white w-4' : 'bg-white/50 w-1.5'}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Comments panel: takes remaining width, min 320px */}
+            <div className="flex-1 min-w-[320px] overflow-hidden">
+              {commentsPanel}
+            </div>
           </div>
-        </div>
+        </>
       ) : (
-        /* ── SIN IMAGEN: una columna, ancho fijo ── */
+        /* ── NO IMAGE: bottom sheet on mobile, centered modal on desktop ── */
         <div
-          className="flex bg-white rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-md"
-          style={{ height: '85vh' }}
+          className="w-full sm:max-w-md bg-white rounded-t-[2rem] sm:rounded-[2rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-300"
+          style={{ height: '85dvh' }}
         >
-          <RightColumn />
+          {commentsPanel}
         </div>
       )}
     </div>
