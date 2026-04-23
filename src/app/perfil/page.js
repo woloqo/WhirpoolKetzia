@@ -74,7 +74,7 @@ export default function PerfilPage() {
   const [gemas, setGemas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [showGemaForm, setShowGemaForm] = useState(false);
-  const [nuevaGema, setNuevaGema] = useState({ titulo: '', descripcion: '' });
+  const [nuevaGema, setNuevaGema] = useState({ titulo: '', descripcion: '', categorias: []  });
   const [savingGema, setSavingGema] = useState(false);
   const [editandoGema, setEditandoGema] = useState(null);
 
