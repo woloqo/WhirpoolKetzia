@@ -4,6 +4,11 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Trash2, Loader2, BookOpen, FileText, HelpCircle, Plus, X, ChevronUp, ChevronDown, Pencil, Layers } from 'lucide-react';
 import Link from 'next/link';
 
+import { Button } from '@/components/Button';
+import { SectionCard } from '@/components/SectionCard';
+import { ResourceItem } from '@/components/ResourceItem';
+import { PageHeader, Text } from '@/components/Typography';
+
 export default function EditarCurso({ params }) {
   const resolvedParams = use(params);
   const cursoId = resolvedParams.id;
@@ -260,7 +265,7 @@ export default function EditarCurso({ params }) {
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6 lg:p-10 font-sans pb-32">
+    <div className="mx-auto p-6 lg:p-10 font-sans pb-32">
       <Link href="/admin" className="flex items-center gap-2 text-slate-400 hover:text-blue-600 mb-8 font-bold transition-colors">
         <ArrowLeft size={18} /> Volver al Panel
       </Link>
@@ -270,247 +275,259 @@ export default function EditarCurso({ params }) {
         <p className="text-slate-400 font-medium mt-1">ID: #{cursoId}</p>
       </div>
 
-      {/* Info básica */}
-      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-6">
-        <h2 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
-          <BookOpen size={20} className="text-blue-600" /> Información del Curso
-        </h2>
-        <div className="space-y-5">
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Título</label>
-            <input className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium"
-              value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción Corta</label>
-            <input className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium"
-              value={descripcionCorta} onChange={(e) => setDescripcionCorta(e.target.value)} maxLength={255} />
-            <p className="text-[10px] text-slate-300 font-bold mt-1 ml-1">{descripcionCorta.length}/255</p>
-          </div>
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción</label>
-            <textarea className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium resize-none"
-              rows={4} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-          </div>
-        </div>
-      </div>
 
-      {/* Secciones */}
-      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-4">
-        <h2 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
-          <Layers size={20} className="text-blue-600" /> Secciones
-          <span className="bg-blue-100 text-blue-600 text-xs font-black px-2 py-0.5 rounded-full">{secciones.length}</span>
-        </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-        <div className="space-y-2 mb-4">
-          {secciones.map((s) => (
-            <div key={s.seccion_id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 group">
-              <Layers size={16} className="text-blue-400 shrink-0" />
-              {editandoSeccion === s.seccion_id ? (
-                <input autoFocus
-                  className="flex-1 text-sm font-bold bg-white border border-blue-300 rounded-xl px-3 py-1.5 outline-none"
-                  defaultValue={s.titulo}
-                  onBlur={(e) => handleEditarSeccion(s.seccion_id, e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleEditarSeccion(s.seccion_id, e.target.value)}
-                />
-              ) : (
-                <span className="flex-1 text-sm font-bold text-slate-800">{s.titulo}</span>
-              )}
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setEditandoSeccion(s.seccion_id)} className="p-1.5 text-slate-400 hover:text-blue-500"><Pencil size={13} /></button>
-                <button onClick={() => handleEliminarSeccion(s.seccion_id)} className="p-1.5 text-slate-400 hover:text-red-500"><Trash2 size={13} /></button>
+          <div className="lg:col-span-3 space-y-6">
+          {/* Info básica */}
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-6">
+            <h2 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+              <BookOpen size={20} className="text-blue-600" /> Información del Curso
+            </h2>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Título</label>
+                <input className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium"
+                  value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción Corta</label>
+                <input className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium"
+                  value={descripcionCorta} onChange={(e) => setDescripcionCorta(e.target.value)} maxLength={255} />
+                <p className="text-[10px] text-slate-300 font-bold mt-1 ml-1">{descripcionCorta.length}/255</p>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción</label>
+                <textarea className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium resize-none"
+                  rows={4} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
               </div>
             </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2">
-          <input
-            className="flex-1 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-            placeholder="Nueva sección..."
-            value={nuevaSeccion}
-            onChange={(e) => setNuevaSeccion(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleCrearSeccion())}
-          />
-          <button onClick={handleCrearSeccion} disabled={!nuevaSeccion.trim()}
-            className="flex items-center gap-2 bg-blue-600 text-white text-xs font-black px-4 py-2 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-40">
-            <Plus size={14} /> Agregar
-          </button>
-        </div>
-      </div>
-
-      {/* Contenido unificado */}
-      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-            <FileText size={20} className="text-blue-600" /> Contenido
-            <span className="bg-blue-100 text-blue-600 text-xs font-black px-2 py-0.5 rounded-full">{todosLosItems.length}</span>
-          </h2>
-        </div>
-
-        {/* Filtros de sección — seleccionar aquí determina a qué sección se agrega el contenido */}
-        <div className="flex flex-wrap gap-2 mb-5">
-          <button onClick={() => setSeccionSeleccionada(null)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${!seccionSeleccionada ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 border border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-600'}`}>
-            Todas
-          </button>
-          {secciones.map(s => (
-            <button key={s.seccion_id}
-              onClick={() => setSeccionSeleccionada(seccionSeleccionada === s.seccion_id ? null : s.seccion_id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${seccionSeleccionada === s.seccion_id ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 border border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-600'}`}>
-              {s.titulo}
-            </button>
-          ))}
-          <button onClick={() => setSeccionSeleccionada('sin_seccion')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${seccionSeleccionada === 'sin_seccion' ? 'bg-slate-700 text-white shadow-md' : 'bg-slate-50 border border-slate-200 text-slate-400 hover:border-slate-400'}`}>
-            Sin sección
-          </button>
-        </div>
-
-        {/* Hint de sección seleccionada */}
-        {seccionSeleccionada && seccionSeleccionada !== 'sin_seccion' && (
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 mb-4 flex items-center gap-2">
-            <Layers size={14} className="text-blue-500" />
-            <p className="text-xs font-black text-blue-600">
-              El contenido que agregues irá a: <span className="underline">{secciones.find(s => s.seccion_id === seccionSeleccionada)?.titulo}</span>
-            </p>
           </div>
-        )}
 
-        {/* Selector de agregar contenido */}
-        {showAddContenido ? (
-          <div className="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">
-              Selecciona material o examen
-              {seccionSeleccionada && seccionSeleccionada !== 'sin_seccion' && (
-                <span className="text-blue-500 ml-2">→ {secciones.find(s => s.seccion_id === seccionSeleccionada)?.titulo}</span>
-              )}
-            </p>
-            <input
-              className="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-              placeholder="Buscar..."
-              value={filtroAdd}
-              onChange={(e) => setFiltroAdd(e.target.value)}
-              autoFocus
-            />
-            {disponiblesParaAgregar.length === 0 ? (
-              <p className="text-slate-400 text-sm font-medium text-center py-4">No hay contenido disponible</p>
-            ) : (
-              <div className="space-y-2 max-h-56 overflow-y-auto">
-                {disponiblesParaAgregar.map(item => (
-                  <button
-                    key={`${item._tipo}-${item.archivo_id || item.quiz_id}`}
-                    onClick={() => item._tipo === 'material' ? agregarMaterial(item.archivo_id) : agregarExamen(item.quiz_id)}
-                    className={`w-full flex items-center gap-3 p-3 bg-white rounded-xl border transition-all text-left ${
-                      item._tipo === 'material'
-                        ? 'border-slate-100 hover:border-blue-300 hover:bg-blue-50'
-                        : 'border-purple-100 hover:border-purple-300 hover:bg-purple-50'
-                    }`}>
-                    {item._tipo === 'material'
-                      ? <FileText size={16} className="text-blue-500 shrink-0" />
-                      : <HelpCircle size={16} className="text-purple-500 shrink-0" />}
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-800 text-sm truncate">{item.nombre}</p>
-                      <p className="text-slate-400 text-xs">{item.subtipo}</p>
-                    </div>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${
-                      item._tipo === 'material' ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'
-                    }`}>
-                      {item._tipo === 'material' ? 'Material' : 'Examen'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-            <button onClick={() => { setShowAddContenido(false); setFiltroAdd(''); }}
-              className="mt-3 text-xs text-slate-400 hover:text-slate-600 font-bold">Cancelar</button>
-          </div>
-        ) : (
-          <button onClick={() => setShowAddContenido(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white text-xs font-black px-4 py-2 rounded-xl hover:bg-blue-700 transition-all mb-4">
-            <Plus size={14} /> Agregar contenido{seccionSeleccionada && seccionSeleccionada !== 'sin_seccion' ? ` a "${secciones.find(s => s.seccion_id === seccionSeleccionada)?.titulo}"` : ''}
-          </button>
-        )}
+          {/* Secciones */}
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-4">
+            <h2 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+              <Layers size={20} className="text-blue-600" /> Secciones
+              <span className="bg-blue-100 text-blue-600 text-xs font-black px-2 py-0.5 rounded-full">{secciones.length}</span>
+            </h2>
 
-        {/* Lista de contenido */}
-        {itemsFiltrados.length === 0 ? (
-          <div className="text-center py-10 text-slate-300">
-            <FileText size={40} strokeWidth={1} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-bold text-slate-400">
-              {seccionSeleccionada ? 'No hay contenido en esta sección' : 'No hay contenido en este curso'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {itemsFiltrados.map((item, filtIndex) => {
-              const isMaterial = item._tipo === 'material';
-              return (
-                <div key={`${item._tipo}-${item._globalIndex}`}
-                  className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
-                  <div className={`p-2 rounded-xl shrink-0 ${isMaterial ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'}`}>
-                    {isMaterial ? <FileText size={16} /> : <HelpCircle size={16} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800 text-sm truncate">
-                      {isMaterial ? item.nombre_archivo : item.titulo}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${isMaterial ? 'bg-blue-50 text-blue-400' : 'bg-purple-50 text-purple-400'}`}>
-                        {isMaterial ? 'Material' : 'Examen'}
-                      </span>
-                      {secciones.length > 0 && (
-                        <select
-                          value={item.seccion_id || ''}
-                          onChange={(e) => cambiarSeccionItem(item, e.target.value ? parseInt(e.target.value) : null)}
-                          className="text-[10px] font-bold text-slate-400 bg-transparent border-none outline-none cursor-pointer hover:text-blue-600 transition-colors"
-                        >
-                          <option value="">Sin sección</option>
-                          {secciones.map(s => <option key={s.seccion_id} value={s.seccion_id}>{s.titulo}</option>)}
-                        </select>
-                      )}
-                    </div>
-                  </div>
-                  {(!item.relacion_id && !item.quiz_curso_id) && (
-                    <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full shrink-0">Nuevo</span>
+            <div className="space-y-2 mb-4">
+              {secciones.map((s) => (
+                <div key={s.seccion_id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 group">
+                  <Layers size={16} className="text-blue-400 shrink-0" />
+                  {editandoSeccion === s.seccion_id ? (
+                    <input autoFocus
+                      className="flex-1 text-sm font-bold bg-white border border-blue-300 rounded-xl px-3 py-1.5 outline-none"
+                      defaultValue={s.titulo}
+                      onBlur={(e) => handleEditarSeccion(s.seccion_id, e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleEditarSeccion(s.seccion_id, e.target.value)}
+                    />
+                  ) : (
+                    <span className="flex-1 text-sm font-bold text-slate-800">{s.titulo}</span>
                   )}
-                  <button onClick={() => eliminarItem(item)}
-                    className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                    <X size={16} />
-                  </button>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setEditandoSeccion(s.seccion_id)} className="p-1.5 text-slate-400 hover:text-blue-500"><Pencil size={13} /></button>
+                    <button onClick={() => handleEliminarSeccion(s.seccion_id)} className="p-1.5 text-slate-400 hover:text-red-500"><Trash2 size={13} /></button>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
 
-      {/* Gestión de alumnos */}
-      <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-200 flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-50 p-3 rounded-2xl"><BookOpen size={20} className="text-blue-600" /></div>
-          <div>
-            <p className="font-black text-slate-900 text-sm">Gestión de Alumnos</p>
-            <p className="text-slate-400 text-xs font-medium">Inscribir o dar de baja alumnos del curso</p>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                placeholder="Nueva sección..."
+                value={nuevaSeccion}
+                onChange={(e) => setNuevaSeccion(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleCrearSeccion())}
+              />
+              <button onClick={handleCrearSeccion} disabled={!nuevaSeccion.trim()}
+                className="flex items-center gap-2 bg-blue-600 text-white text-xs font-black px-4 py-2 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-40">
+                <Plus size={14} /> Agregar
+              </button>
+            </div>
           </div>
+
         </div>
-        <Link href={`/admin/gestionar/${cursoId}`}
-          className="flex items-center gap-2 bg-slate-900 text-white font-black text-xs px-5 py-3 rounded-xl hover:bg-blue-600 transition-all">
-          Gestionar Alumnos
-        </Link>
-      </div>
 
-      {/* Acciones */}
-      <div className="flex gap-4">
-        <button onClick={handleSave} disabled={saving}
-          className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-100">
-          {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-          {saving ? 'Guardando...' : 'Guardar Cambios'}
-        </button>
-        <button onClick={handleDelete} disabled={deleting}
-          className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-100 font-black px-6 py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">
-          {deleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-          Eliminar Curso
-        </button>
+
+        <div className="lg:col-span-6 space-y-4">
+
+        {/* Contenido unificado */}
+        <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <FileText size={20} className="text-blue-600" /> Contenido
+              <span className="bg-blue-100 text-blue-600 text-xs font-black px-2 py-0.5 rounded-full">{todosLosItems.length}</span>
+            </h2>
+          </div>
+
+          {/* Filtros de sección — seleccionar aquí determina a qué sección se agrega el contenido */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            <button onClick={() => setSeccionSeleccionada(null)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${!seccionSeleccionada ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 border border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-600'}`}>
+              Todas
+            </button>
+            {secciones.map(s => (
+              <button key={s.seccion_id}
+                onClick={() => setSeccionSeleccionada(seccionSeleccionada === s.seccion_id ? null : s.seccion_id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${seccionSeleccionada === s.seccion_id ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 border border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-600'}`}>
+                {s.titulo}
+              </button>
+            ))}
+            <button onClick={() => setSeccionSeleccionada('sin_seccion')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${seccionSeleccionada === 'sin_seccion' ? 'bg-slate-700 text-white shadow-md' : 'bg-slate-50 border border-slate-200 text-slate-400 hover:border-slate-400'}`}>
+              Sin sección
+            </button>
+          </div>
+
+          {/* Hint de sección seleccionada */}
+          {seccionSeleccionada && seccionSeleccionada !== 'sin_seccion' && (
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 mb-4 flex items-center gap-2">
+              <Layers size={14} className="text-blue-500" />
+              <p className="text-xs font-black text-blue-600">
+                El contenido que agregues irá a: <span className="underline">{secciones.find(s => s.seccion_id === seccionSeleccionada)?.titulo}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Lista de contenido */}
+          {itemsFiltrados.length === 0 ? (
+            <div className="text-center py-10 text-slate-300">
+              <FileText size={40} strokeWidth={1} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-bold text-slate-400">
+                {seccionSeleccionada ? 'No hay contenido en esta sección' : 'No hay contenido en este curso'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {itemsFiltrados.map((item, filtIndex) => {
+                const isMaterial = item._tipo === 'material';
+                return (
+                  <div key={`${item._tipo}-${item._globalIndex}`}
+                    className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                    <div className={`p-2 rounded-xl shrink-0 ${isMaterial ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'}`}>
+                      {isMaterial ? <FileText size={16} /> : <HelpCircle size={16} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-800 text-sm truncate">
+                        {isMaterial ? item.nombre_archivo : item.titulo}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${isMaterial ? 'bg-blue-50 text-blue-400' : 'bg-purple-50 text-purple-400'}`}>
+                          {isMaterial ? 'Material' : 'Examen'}
+                        </span>
+                        {secciones.length > 0 && (
+                          <select
+                            value={item.seccion_id || ''}
+                            onChange={(e) => cambiarSeccionItem(item, e.target.value ? parseInt(e.target.value) : null)}
+                            className="text-[10px] font-bold text-slate-400 bg-transparent border-none outline-none cursor-pointer hover:text-blue-600 transition-colors"
+                          >
+                            <option value="">Sin sección</option>
+                            {secciones.map(s => <option key={s.seccion_id} value={s.seccion_id}>{s.titulo}</option>)}
+                          </select>
+                        )}
+                      </div>
+                    </div>
+                    {(!item.relacion_id && !item.quiz_curso_id) && (
+                      <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full shrink-0">Nuevo</span>
+                    )}
+                    <button onClick={() => eliminarItem(item)}
+                      className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                      <X size={16} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          </div>
+
+          <div className="lg:col-span-3 space-y-6">
+
+            {/* Selector de agregar contenido */}
+            {showAddContenido ? (
+              <div className="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">
+                  Selecciona material o examen
+                  {seccionSeleccionada && seccionSeleccionada !== 'sin_seccion' && (
+                    <span className="text-blue-500 ml-2">→ {secciones.find(s => s.seccion_id === seccionSeleccionada)?.titulo}</span>
+                  )}
+                </p>
+                <input
+                  className="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                  placeholder="Buscar..."
+                  value={filtroAdd}
+                  onChange={(e) => setFiltroAdd(e.target.value)}
+                  autoFocus
+                />
+                {disponiblesParaAgregar.length === 0 ? (
+                  <p className="text-slate-400 text-sm font-medium text-center py-4">No hay contenido disponible</p>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto">
+                    {disponiblesParaAgregar.map(item => (
+                      <button
+                        key={`${item._tipo}-${item.archivo_id || item.quiz_id}`}
+                        onClick={() => item._tipo === 'material' ? agregarMaterial(item.archivo_id) : agregarExamen(item.quiz_id)}
+                        className={`w-full flex items-center gap-3 p-3 bg-white rounded-xl border transition-all text-left ${
+                          item._tipo === 'material'
+                            ? 'border-slate-100 hover:border-blue-300 hover:bg-blue-50'
+                            : 'border-purple-100 hover:border-purple-300 hover:bg-purple-50'
+                        }`}>
+                        {item._tipo === 'material'
+                          ? <FileText size={16} className="text-blue-500 shrink-0" />
+                          : <HelpCircle size={16} className="text-purple-500 shrink-0" />}
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-800 text-sm truncate">{item.nombre}</p>
+                          <p className="text-slate-400 text-xs">{item.subtipo}</p>
+                        </div>
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${
+                          item._tipo === 'material' ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'
+                        }`}>
+                          {item._tipo === 'material' ? 'Material' : 'Examen'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => { setShowAddContenido(false); setFiltroAdd(''); }}
+                  className="mt-3 text-xs text-slate-400 hover:text-slate-600 font-bold">Cancelar</button>
+              </div>
+            ) : (
+              <button onClick={() => setShowAddContenido(true)}
+                className="flex items-center gap-2 bg-blue-600 text-white text-xs font-black px-4 py-2 rounded-xl hover:bg-blue-700 transition-all mb-4">
+                <Plus size={14} /> Agregar contenido{seccionSeleccionada && seccionSeleccionada !== 'sin_seccion' ? ` a "${secciones.find(s => s.seccion_id === seccionSeleccionada)?.titulo}"` : ''}
+              </button>
+            )}
+            </div>
+
+        </div>
+
+        <div className="lg:col-span-3 space-y-6">
+          
+          {/* Gestión de alumnos */}
+          <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-200 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-50 p-3 rounded-2xl"><BookOpen size={20} className="text-blue-600" /></div>
+              <div>
+                <p className="font-black text-slate-900 text-sm">Gestión del curso</p>
+              </div>
+            </div>
+            <Link href={`/admin/gestionar/${cursoId}`}
+              className="flex items-center mt-4 bg-slate-900 text-white font-black text-xs px-5 py-3 rounded-xl hover:bg-blue-600 transition-all">
+              Gestionar Alumnos
+            </Link>
+
+            {/* Acciones */}
+            <Button className="w-full mt-4 text-base rounded-[1.5rem]" loading={loading} icon={Save} onClick={handleSave}>
+              Guardar cambios
+            </Button>
+
+          </div>
+
+        </div>
+
       </div>
     </div>
   );
