@@ -59,13 +59,27 @@ const [items] = await pool.query(`
 
     // 4. Inserción automática en Completaciones
     if (esCompletadoReal) {
-      await pool.query(`
-        INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)
-        SELECT ?, inscripcion_id, NOW() 
-        FROM Inscripciones 
-        WHERE usuario_id = ? AND curso_id = ?
-      `, [usuario_id, usuario_id, curso_id]);
-    }
+  await pool.query(`
+    INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)
+    SELECT ?, inscripcion_id, NOW() 
+    FROM Inscripciones 
+    WHERE usuario_id = ? AND curso_id = ?
+  `, [usuario_id, usuario_id, curso_id]);
+
+  // Notificación por correo de curso completado
+  const { notificarCursoCompletado } = await import('@/lib/email');
+  const [alumnoRows] = await pool.query(
+    'SELECT nombre, email FROM Usuarios WHERE usuario_id = ?', [usuario_id]
+  );
+  if (alumnoRows[0]?.email) {
+    await notificarCursoCompletado({
+      toEmail: alumnoRows[0].email,
+      toNombre: alumnoRows[0].nombre,
+      tituloCurso: cursoRows[0].titulo,
+      cursoId: curso_id,
+    });
+  }
+}
 
     return NextResponse.json({
       curso: cursoRows[0],

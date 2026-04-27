@@ -6,7 +6,6 @@ export async function GET(request) {
   const curso_id = searchParams.get('curso_id');
 
   try {
-    // 1. Usuarios NO inscritos (incluye Admins y Empleados que falten)
     const [disponibles] = await pool.query(`
       SELECT usuario_id, nombre, email, rol_id FROM Usuarios 
       WHERE usuario_id NOT IN (
@@ -14,7 +13,6 @@ export async function GET(request) {
       )
     `, [curso_id]);
 
-    // 2. Usuarios YA inscritos
     const [inscritos] = await pool.query(`
       SELECT u.usuario_id, u.nombre, u.email, i.fecha_asignacion, i.inscripcion_id
       FROM Usuarios u
@@ -44,26 +42,35 @@ export async function DELETE(request) {
 export async function POST(request) {
   try {
     const { usuario_id, curso_id } = await request.json();
-    
-    // 1. Insertar la inscripción
+
     await pool.query(
       'INSERT INTO Inscripciones (usuario_id, curso_id, estado) VALUES (?, ?, "En curso")',
       [usuario_id, curso_id]
     );
 
-    // 2. Obtener el título del curso para el mensaje
     const [cursoRows] = await pool.query(
-      'SELECT titulo FROM Cursos WHERE curso_id = ?',
-      [curso_id]
+      'SELECT titulo, descripcionCorta FROM Cursos WHERE curso_id = ?', [curso_id]
     );
     const tituloCurso = cursoRows[0]?.titulo || 'un nuevo curso';
 
-    // 3. Crear la notificación para el usuario asignado
-    const mensaje = `Has sido inscrito en el curso: "${tituloCurso}"`;
     await pool.query(
       'INSERT INTO Notificaciones (usuario_id, tipo, mensaje) VALUES (?, ?, ?)',
-      [usuario_id, 'inscripcion', mensaje]
+      [usuario_id, 'inscripcion', `Has sido inscrito en el curso: "${tituloCurso}"`]
     );
+
+    const [alumnoRows] = await pool.query(
+      'SELECT nombre, email FROM Usuarios WHERE usuario_id = ?', [usuario_id]
+    );
+    if (alumnoRows[0]?.email) {
+      const { notificarCursoAsignado } = await import('@/lib/email');
+      await notificarCursoAsignado({
+        toEmail: alumnoRows[0].email,
+        toNombre: alumnoRows[0].nombre,
+        tituloCurso,
+        descripcionCurso: cursoRows[0]?.descripcionCorta || '',
+        cursoId: curso_id,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

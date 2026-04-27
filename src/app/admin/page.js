@@ -346,6 +346,7 @@ export default function AdminDashboard() {
       {/* ══════════ TAB: ESTADÍSTICAS ══════════ */}
       {activeTab === 'estadisticas' && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          
 
           {/* ── ESTADÍSTICAS DE CURSOS ── */}
           <SectionCard title="Estadísticas de Cursos">
