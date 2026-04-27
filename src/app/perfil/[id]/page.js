@@ -102,30 +102,35 @@ const COLORES_GEMA = [
   };
 
   const fetchDatos = async () => {
-    if (!id) { router.push('/login'); return; }
-    setCurrentUserId(localStorage.getItem('usuario_id'));
-    try {
-      const res = await fetch(`/api/perfil?id=${id}`);
-      const data = await res.json();
-      setDatos(data);
-      fetchGemas(id);
-      fetchPosts(id);
-      fetchCursos(id);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!id) { router.push('/login'); return; }
+  setCurrentUserId(localStorage.getItem('usuario_id'));
+  try {
+    const res = await fetch(`/api/perfil?id=${id}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setDatos(data);
+    fetchGemas(id);
+    fetchPosts(id);
+    fetchCursos(id);
+  } catch (err) {
+    console.error('fetchDatos falló:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => { 
+  const fetchActividad = async () => {
+  try {
+    const res = await fetch(`/api/perfil?id=${id}`);
+    const data = await res.json();
+    setDatos(prev => ({ ...prev, usuario: data.usuario }));
+  } catch (err) { console.error(err); }
+};
+
+useEffect(() => { 
   fetchDatos();
-  const datosInterval = setInterval(fetchDatos, 60000);
-  const ahoraInterval = setInterval(() => setAhora(new Date()), 30000); // actualiza el "ahora" cada 30s
-  return () => {
-    clearInterval(datosInterval);
-    clearInterval(ahoraInterval);
-  };
+  const datosInterval = setInterval(fetchActividad, 60000);
+  return () => clearInterval(datosInterval);
 }, []);
 
 /* ── LOADING ──────────────────────────────── */

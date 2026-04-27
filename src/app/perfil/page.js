@@ -146,8 +146,6 @@ export default function PerfilPage() {
 
   useEffect(() => { 
   fetchDatos();
-  const interval = setInterval(fetchDatos, 15000); // refresca cada 15s
-  return () => clearInterval(interval);
 }, []);
 
   /* ── FOTO DE PERFIL ───────────────────────── */
