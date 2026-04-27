@@ -128,21 +128,25 @@ function PostCard({ post, currentUserId, onLike, onOpenViewer }) {
         </div>
 
         {primerComentario && (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 mb-2">
             <span className="font-semibold">{primerComentario.nombre}</span>{' '}
             {primerComentario.contenido}
           </p>
         )}
         
-        {post.comentarios?.length > 1 && (
-          <button onClick={() => onOpenViewer(post)} className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
-            Ver los {post.comentarios.length} comentarios
-          </button>
-        )}
+        <span className="flex flex-col gap-2 justify-center items-start">
 
-        <button onClick={() => onOpenViewer(post)} className="text-sm text-slate-300 hover:text-slate-500 transition-colors">
-          Agrega un comentario...
-        </button>
+          {post.comentarios?.length > 1 && (
+            <button onClick={() => onOpenViewer(post)} className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
+              Ver los {post.comentarios.length} comentarios
+            </button>
+          )}
+
+          <button onClick={() => onOpenViewer(post)} className="text-sm text-slate-300 hover:text-slate-500 transition-colors">
+            Agrega un comentario...
+          </button>
+
+        </span>
 
       </div>
     </div>
