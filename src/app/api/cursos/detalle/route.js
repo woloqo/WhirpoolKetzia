@@ -45,9 +45,9 @@ const [items] = await pool.query(`
   (SELECT COUNT(*) FROM Archivos_Vistos av WHERE av.archivo_id = a.archivo_id AND av.usuario_id = ? AND av.curso_id = ?) AS completado
   FROM Archivos_Curso ac JOIN Archivos a ON ac.archivo_id = a.archivo_id WHERE ac.curso_id = ?
   UNION ALL
-  SELECT q.quiz_id AS id_contenido, q.titulo AS titulo, 'quiz' AS tipo, qc.orden, qc.seccion_id,
-  (SELECT COUNT(*) FROM Quizzes_Completados qc_comp WHERE qc_comp.quiz_id = q.quiz_id AND qc_comp.usuario_id = ? AND qc_comp.curso_id = ?) AS completado
-  FROM Quiz_Curso qc JOIN Quizzes q ON qc.quiz_id = q.quiz_id WHERE qc.curso_id = ?
+  SELECT q.quiz_id AS id_contenido, q.titulo AS titulo, 'quiz' AS tipo, qc2.orden, qc2.seccion_id,
+  (SELECT COUNT(*) FROM Quizzes_Completados qcomp WHERE qcomp.quiz_id = q.quiz_id AND qcomp.usuario_id = ? AND qcomp.curso_id = ?) AS completado
+  FROM Quiz_Curso qc2 JOIN Quizzes q ON qc2.quiz_id = q.quiz_id WHERE qc2.curso_id = ?
   ORDER BY orden ASC
 `, [usuario_id, curso_id, curso_id, usuario_id, curso_id, curso_id]);
 
