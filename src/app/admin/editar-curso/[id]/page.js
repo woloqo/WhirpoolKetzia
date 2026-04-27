@@ -5,9 +5,6 @@ import { ArrowLeft, Save, Trash2, Loader2, BookOpen, FileText, HelpCircle, Plus,
 import Link from 'next/link';
 
 import { Button } from '@/components/Button';
-import { SectionCard } from '@/components/SectionCard';
-import { ResourceItem } from '@/components/ResourceItem';
-import { PageHeader, Text } from '@/components/Typography';
 
 export default function EditarCurso({ params }) {
   const resolvedParams = use(params);
