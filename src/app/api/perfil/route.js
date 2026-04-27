@@ -11,11 +11,15 @@ export async function GET(request) {
 
   try {
     const [userRows] = await pool.query(`
-      SELECT u.*, r.nombre as nombre_rol 
-      FROM Usuarios u
-      JOIN Roles r ON u.rol_id = r.rol_id
-      WHERE u.usuario_id = ?`, [usuarioId]);
-
+  SELECT u.*, r.nombre as nombre_rol,
+    CASE 
+      WHEN u.ultima_actividad IS NULL THEN NULL
+      ELSE TIMESTAMPDIFF(MINUTE, u.ultima_actividad, NOW())
+    END as minutos_inactivo
+  FROM Usuarios u
+  JOIN Roles r ON u.rol_id = r.rol_id
+  WHERE u.usuario_id = ?
+`, [usuarioId]);
     const [statsRows] = await pool.query(`
       SELECT 
         (SELECT COUNT(*) FROM Inscripciones WHERE usuario_id = ?) as total_inscritos,

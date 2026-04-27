@@ -45,9 +45,9 @@ const [items] = await pool.query(`
   (SELECT COUNT(*) FROM Archivos_Vistos av WHERE av.archivo_id = a.archivo_id AND av.usuario_id = ? AND av.curso_id = ?) AS completado
   FROM Archivos_Curso ac JOIN Archivos a ON ac.archivo_id = a.archivo_id WHERE ac.curso_id = ?
   UNION ALL
-  SELECT q.quiz_id AS id_contenido, q.titulo AS titulo, 'quiz' AS tipo, qc.orden, qc.seccion_id,
-  (SELECT COUNT(*) FROM Quizzes_Completados qc_comp WHERE qc_comp.quiz_id = q.quiz_id AND qc_comp.usuario_id = ? AND qc_comp.curso_id = ?) AS completado
-  FROM Quiz_Curso qc JOIN Quizzes q ON qc.quiz_id = q.quiz_id WHERE qc.curso_id = ?
+  SELECT q.quiz_id AS id_contenido, q.titulo AS titulo, 'quiz' AS tipo, qc2.orden, qc2.seccion_id,
+  (SELECT COUNT(*) FROM Quizzes_Completados qcomp WHERE qcomp.quiz_id = q.quiz_id AND qcomp.usuario_id = ? AND qcomp.curso_id = ?) AS completado
+  FROM Quiz_Curso qc2 JOIN Quizzes q ON qc2.quiz_id = q.quiz_id WHERE qc2.curso_id = ?
   ORDER BY orden ASC
 `, [usuario_id, curso_id, curso_id, usuario_id, curso_id, curso_id]);
 
@@ -59,13 +59,27 @@ const [items] = await pool.query(`
 
     // 4. Inserción automática en Completaciones
     if (esCompletadoReal) {
-      await pool.query(`
-        INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)
-        SELECT ?, inscripcion_id, NOW() 
-        FROM Inscripciones 
-        WHERE usuario_id = ? AND curso_id = ?
-      `, [usuario_id, usuario_id, curso_id]);
-    }
+  await pool.query(`
+    INSERT IGNORE INTO Completaciones (usuario_id, inscripcion_id, fecha_completacion)
+    SELECT ?, inscripcion_id, NOW() 
+    FROM Inscripciones 
+    WHERE usuario_id = ? AND curso_id = ?
+  `, [usuario_id, usuario_id, curso_id]);
+
+  // Notificación por correo de curso completado
+  const { notificarCursoCompletado } = await import('@/lib/email');
+  const [alumnoRows] = await pool.query(
+    'SELECT nombre, email FROM Usuarios WHERE usuario_id = ?', [usuario_id]
+  );
+  if (alumnoRows[0]?.email) {
+    await notificarCursoCompletado({
+      toEmail: alumnoRows[0].email,
+      toNombre: alumnoRows[0].nombre,
+      tituloCurso: cursoRows[0].titulo,
+      cursoId: curso_id,
+    });
+  }
+}
 
     return NextResponse.json({
       curso: cursoRows[0],

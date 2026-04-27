@@ -14,12 +14,32 @@ export default function Sidebar({ colapsado }) {
   const router = useRouter();
 
   useEffect(() => {
-    setIsMounted(true);
-    const savedRole = localStorage.getItem('rol_id');
-    if (savedRole !== null) {
-      setRolId(Number(savedRole));
-    }
-  }, []);
+  setIsMounted(true);
+  const savedRole = localStorage.getItem('rol_id');
+  if (savedRole !== null) {
+    setRolId(Number(savedRole));
+  }
+
+  // Ping de actividad cada 2 minutos
+  const usuarioId = localStorage.getItem('usuario_id');
+  if (!usuarioId) return;
+
+  const ping = async () => {
+    console.log('🔔 Enviando ping para usuario:', usuarioId);
+    try {
+      await fetch('/api/actividad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario_id: usuarioId }),
+      });
+    } catch (e) { console.error(e); }
+  };
+
+  ping(); // ping inmediato al montar
+  const interval = setInterval(ping, 3 * 60 * 1000); // cada 3 minutos
+
+  return () => clearInterval(interval); // limpiar al desmontar
+}, []);
 
   const isActive = (path) => pathname === path;
 

@@ -54,10 +54,11 @@ export default function CursoDetalle(props) {
   if (!datos.curso) return <div className="p-20 text-center text-slate-500 font-bold">Curso no encontrado</div>;
 
   const { curso, items, secciones, porcentaje } = datos;
+  
 
   // Calcular si una sección está completada
   const seccionCompletada = (seccion_id) => {
-    const itemsSeccion = items.filter(i => i.seccion_id === seccion_id);
+  const itemsSeccion = items.filter(i => String(i.seccion_id) === String(seccion_id));
     if (itemsSeccion.length === 0) return true;
     return itemsSeccion.every(i => i.completado > 0);
   };
@@ -82,6 +83,9 @@ export default function CursoDetalle(props) {
   const renderItem = (item, index, bloqueado = false) => {
     const isQuiz = item.tipo === 'quiz';
     const completado = item.completado > 0;
+
+    console.log('SECCIONES:', secciones);
+console.log('ITEMS:', items.map(i => ({ titulo: i.titulo, tipo: i.tipo, seccion_id: i.seccion_id })));
 
     return (
       <div key={`${item.tipo}-${item.id_contenido}`}

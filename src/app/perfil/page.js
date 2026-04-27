@@ -144,7 +144,11 @@ export default function PerfilPage() {
     }
   };
 
-  useEffect(() => { fetchDatos(); }, []);
+  useEffect(() => { 
+  fetchDatos();
+  const interval = setInterval(fetchDatos, 15000); // refresca cada 15s
+  return () => clearInterval(interval);
+}, []);
 
   /* ── FOTO DE PERFIL ───────────────────────── */
   const handleFileChange = (e) => {
@@ -290,6 +294,23 @@ export default function PerfilPage() {
     </div>
   );
 
+  const formatearActividad = (minutos) => {
+  if (minutos === null || minutos === undefined) return { 
+    texto: 'Sin actividad reciente', 
+    color: 'text-slate-300', 
+    bg: 'bg-slate-50 border-slate-200', 
+    dot: false 
+  };
+  const min = Number(minutos);
+  if (min < 3) return { texto: 'Activo ahora', color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', dot: true };
+  if (min < 60) return { texto: `Activo hace ${min} min`, color: 'text-slate-500', bg: 'bg-slate-50 border-slate-200', dot: false };
+  const horas = Math.floor(min / 60);
+  if (horas < 24) return { texto: `Activo hace ${horas}h`, color: 'text-slate-500', bg: 'bg-slate-50 border-slate-200', dot: false };
+  const dias = Math.floor(horas / 24);
+  if (dias < 7) return { texto: `Activo hace ${dias}d`, color: 'text-slate-400', bg: 'bg-slate-50 border-slate-200', dot: false };
+  return { texto: 'Hace más de una semana', color: 'text-slate-300', bg: 'bg-slate-50 border-slate-200', dot: false };
+};
+
 
   return (
     <div className="bg-white min-h-screen pb-32">
@@ -402,12 +423,46 @@ export default function PerfilPage() {
             </a>
 
             {/* STATS EN LÍNEA */}
-            <div className="flex flex-wrap gap-6 mt-4">
-              <StatChip icon={BookCheck} value={cursosTerminados.length} label="cursos terminados" />
-              <StatChip icon={BookOpen} value={cursosPendientes.length} label="en progreso" />
-              <StatChip icon={Grid} value={posts.length} label="publicaciones" />
-              <StatChip icon={Gem} value={gemas.length} label="gemas" />
-            </div>
+<div className="flex flex-wrap gap-6 mt-4">
+  <StatChip icon={BookCheck} value={cursosTerminados.length} label="cursos terminados" />
+  <StatChip icon={BookOpen} value={cursosPendientes.length} label="en progreso" />
+  <StatChip icon={Grid} value={posts.length} label="publicaciones" />
+  <StatChip icon={Gem} value={gemas.length} label="gemas" />
+</div>
+
+{/* RACHA Y ACTIVIDAD */}
+<div className="flex flex-wrap gap-3 mt-4">
+  {usuario.racha_actual > 0 && (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${
+      usuario.racha_actual >= 7 
+        ? 'bg-orange-50 border-orange-200 text-orange-600' 
+        : usuario.racha_actual >= 3 
+          ? 'bg-amber-50 border-amber-200 text-amber-600'
+          : 'bg-slate-50 border-slate-200 text-slate-500'
+    }`}>
+      🔥 {usuario.racha_actual} día{usuario.racha_actual !== 1 ? 's' : ''} activo{usuario.racha_actual !== 1 ? 's' : ''}
+      {usuario.mejor_racha > usuario.racha_actual && (
+        <span className="text-slate-300 font-medium ml-1">· mejor: {usuario.mejor_racha}</span>
+      )}
+    </div>
+  )}
+  {(() => {
+    const actividad = formatearActividad(usuario.minutos_inactivo);
+    if (!actividad) return null;
+    return (
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${actividad.bg} ${actividad.color}`}>
+        {actividad.dot && (
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+        )}
+        {!actividad.dot && '🕐'} {actividad.texto}
+      </div>
+    );
+  })()}
+</div>
+
           </div>
         </div>
       </div>
