@@ -189,11 +189,11 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="max-w-[1800px] mx-auto font-sans mt-6">
+    <div className="max-w-[1800px] mx-auto font-sans mt-4 mb-12 pb-6 p-2">
       <PageHeader title="Panel de Control" subtitle="Gestión de Capacitación Whirlpool" icon={ShieldCheck} />
 
       <div className="flex justify-center md:gap-16 border-b border-slate-200 mb-8">
-        <TabButton active={activeTab === 'cursos'} onClick={() => setActiveTab('cursos')} icon={BookOpen} label="Cursos" count={cursos.length} />
+        <TabButton active={activeTab === 'cursos'} onClick={() => setActiveTab('cursos')} icon={BookOpen} label="Cursos" />
         <TabButton active={activeTab === 'estadisticas'} onClick={() => setActiveTab('estadisticas')} icon={BarChart3} label="Estadísticas" />
       </div>
 
