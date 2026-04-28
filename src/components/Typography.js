@@ -1,5 +1,3 @@
-// @/components/Typography.js
-import { ShieldCheck } from 'lucide-react';
 
 // Títulos de secciones (ej. Catálogo Global, Estadísticas)
 export const Title = ({ children, className = "" }) => (
@@ -22,7 +20,7 @@ export const Text = ({ children, variant = "default", className = "" }) => {
 // Header Principal de la página
 export const PageHeader = ({ title, subtitle, icon: Icon = null }) => (
   <div className="mb-4">
-    <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
+    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">
       {title}
     </h1>
     

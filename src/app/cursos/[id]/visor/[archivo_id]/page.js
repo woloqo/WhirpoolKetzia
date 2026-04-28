@@ -147,7 +147,7 @@ export default function VisorMaterial(props) {
             {/* SENSOR DE FINAL (Invisible para el usuario) */}
             <div 
               ref={sensorRef} 
-              className="h-1 w-full opacity-0 pointer-events-none bg-slate-900" 
+              className="h-0 w-full opacity-0 pointer-events-none bg-slate-900" 
             />
           </div>
         )}

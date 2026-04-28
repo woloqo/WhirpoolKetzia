@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { 
   ArrowLeft, Play, CheckCircle2, Loader2, Lock,
-  Users, BookOpen, FileText, Award, Tag, ChevronDown, ChevronUp, Layers
+  Users, BookOpen, FileText, Award, Tag, ChevronDown, ChevronUp, Layers, Eye
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -124,7 +124,7 @@ console.log('ITEMS:', items.map(i => ({ titulo: i.titulo, tipo: i.tipo, seccion_
         ) : (
           <Link href={`/cursos/${id}/visor/${item.id_contenido}`}
             className="p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all shrink-0">
-            <Play size={16} fill="currentColor" />
+            <Eye size={16}/>
           </Link>
         )}
       </div>
@@ -132,15 +132,12 @@ console.log('ITEMS:', items.map(i => ({ titulo: i.titulo, tipo: i.tipo, seccion_
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-10 font-sans">
-      <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 mb-8 transition-all font-bold text-xs uppercase tracking-widest group">
-        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Volver al Panel
-      </Link>
+    <div className="max-w-[1800px] mx-auto p-2 pb-10 mb-8 lg:p-10">
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* COLUMNA IZQUIERDA */}
-        <aside className="lg:col-span-4 space-y-8 lg:sticky lg:top-10">
+        <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-10">
           <SectionCard title="Detalles del Curso">
             <div className="p-4 space-y-6">
               <div className="aspect-video w-full overflow-hidden rounded-[1.4rem]">
@@ -176,7 +173,7 @@ console.log('ITEMS:', items.map(i => ({ titulo: i.titulo, tipo: i.tipo, seccion_
 
           {/* Métricas */}
           <SectionCard variant="dark" className="shadow-2xl shadow-slate-900/20">
-            <div className="p-4 space-y-4 relative overflow-hidden">
+            <div className="p-2 space-y-4 relative overflow-hidden">
               <Users className="absolute -right-4 -bottom-4 opacity-10 text-white" size={120} />
               <div className="space-y-4 relative z-10">
                 <div className="bg-white/10 p-4 rounded-2xl flex items-center gap-4 border border-white/5">

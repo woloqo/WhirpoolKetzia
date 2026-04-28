@@ -1,9 +1,9 @@
 "use client";
 import Fuse from 'fuse.js';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Plus, BookOpen, ChevronRight, Loader2, ShieldCheck, 
+  Plus, BookOpen, ChevronRight, ChevronDown, Loader2, ShieldCheck, 
   Trash2, Users, CheckCircle, BarChart3, TrendingUp, 
   UserCircle, FileText, ExternalLink, HelpCircle, Search, 
   Tag, Edit3, X, Check, Activity, BookCheck,
@@ -95,6 +95,16 @@ export default function AdminDashboard() {
   const [editandoCatId, setEditandoCatId] = useState(null);
   const [editandoCatNombre, setEditandoCatNombre] = useState('');
 
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [selectorQuery, setSelectorQuery] = useState('');
+  const selectorRef = useRef(null);
+  const selectorInputRef = useRef(null);
+
+  const cursoSelectorRef = useRef(null);
+  const cursoSelectorInputRef = useRef(null);
+  const [cursoSelectorOpen, setCursoSelectorOpen] = useState(false);
+  const [cursoSelectorQuery, setCursoSelectorQuery] = useState('');
+
   const router = useRouter();
 
   const filter = (arr, q, keys) => !q.trim() ? arr : new Fuse(arr, { keys, threshold: 0.4, ignoreLocation: true }).search(q).map(r => r.item);
@@ -128,7 +138,18 @@ export default function AdminDashboard() {
     if (rol !== '1' && rol !== '30001') return router.push('/');
     setRolId(Number(rol));
     cargarDatos();
+
+    const handleClick = (e) => {
+      if (selectorRef.current && !selectorRef.current.contains(e.target)) {
+        setSelectorOpen(false);
+      }
+      if (cursoSelectorRef.current && !cursoSelectorRef.current.contains(e.target)) setCursoSelectorOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+
   }, [router]);
+
 
   const cargarStatsCurso = async (curso_id) => {
     setLoadingStatsCurso(true);
@@ -189,12 +210,15 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="max-w-[1800px] mx-auto font-sans mt-4 mb-12 pb-6 p-2">
-      <PageHeader title="Panel de Control" subtitle="Gestión de Capacitación Whirlpool" icon={ShieldCheck} />
+    <div className="max-w-[1800px] mt-4 mb-12 pb-6">
+      <div className='px-6 pt-2 mx-2'>
+        <PageHeader title="Panel de Control" subtitle="Gestión de Capacitación Whirlpool" icon={ShieldCheck} />
+      </div>
 
       <div className="flex justify-center md:gap-16 border-b border-slate-200 mb-8">
         <TabButton active={activeTab === 'cursos'} onClick={() => setActiveTab('cursos')} icon={BookOpen} label="Cursos" />
-        <TabButton active={activeTab === 'estadisticas'} onClick={() => setActiveTab('estadisticas')} icon={BarChart3} label="Estadísticas" />
+        <TabButton active={activeTab === 'estadisticasCursos'} onClick={() => setActiveTab('estadisticasCursos')} icon={BarChart3} label="Estadísticas de cursos" />
+        <TabButton active={activeTab === 'estadisticasAlumnos'} onClick={() => setActiveTab('estadisticasAlumnos')} icon={BarChart3} label="Estadísticas de alumnos" />
       </div>
 
       {/* ══════════ TAB: CURSOS ══════════ */}
@@ -254,8 +278,8 @@ export default function AdminDashboard() {
             </SectionCard>
 
             <SectionCard title="Gestión de Categorías" count={categorias.length}>
-              <div className="p-6">
-                <div className="flex gap-3 mb-8">
+              <div className="p-2">
+                <div className="flex gap-3 py-2">
                   <div className="relative flex-1">
                     <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                     <input type="text" placeholder="Nueva categoría..." value={nuevaCatNombre}
@@ -264,9 +288,9 @@ export default function AdminDashboard() {
                   </div>
                   <Button onClick={agregarCategoria} variant="dark" icon={Plus} className="rounded-2xl px-6">Agregar</Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 w-full">
                   {categorias.map((cat) => (
-                    <div key={cat.categoria_id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 transition-all group">
+                    <div key={cat.categoria_id} className="w-full flex items-center justify-between p-2 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 transition-all group">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><Tag size={14} /></div>
                         {editandoCatId === cat.categoria_id
@@ -295,10 +319,9 @@ export default function AdminDashboard() {
 
           {/* ASIDE Materiales*/}
           <aside className="xl:col-span-1 space-y-6 lg:sticky lg:top-10">
-            
             <SectionCard title="Biblioteca de materiales" count={materialesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-material" variant="dark" icon={Plus}>Nuevo Material</Button>}>
-              <div className="px-4 pt-4"><SearchBox value={searchMateriales} onChange={setSearchMateriales} placeholder="Buscar material..." /></div>
-              <div className="overflow-x-auto p-2">
+              <div className="px-2 py-2"><SearchBox value={searchMateriales} onChange={setSearchMateriales} placeholder="Buscar material..." /></div>
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead><tr className="bg-slate-50/50">
                     <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
@@ -336,8 +359,8 @@ export default function AdminDashboard() {
             </SectionCard>
 
             <SectionCard title="Exámenes Disponibles" count={examenesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-examen" className="bg-purple-600 hover:bg-purple-700 shadow-purple-100" icon={Plus}>Crear Examen</Button>}>
-              <div className="px-4 pt-4"><SearchBox value={searchExamenes} onChange={setSearchExamenes} placeholder="Buscar examen..." /></div>
-              <div className="overflow-x-auto p-2">
+              <div className="px-2 py-2"><SearchBox value={searchExamenes} onChange={setSearchExamenes} placeholder="Buscar examen..." /></div>
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead><tr className="bg-slate-50/50">
                     <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
@@ -375,15 +398,14 @@ export default function AdminDashboard() {
       )}
 
       {/* ══════════ TAB: ESTADÍSTICAS ══════════ */}
-      {activeTab === 'estadisticas' && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          
+      {activeTab === 'estadisticasCursos' && (
+        <div className="max-w-[1200px]">
 
           {/* ── ESTADÍSTICAS DE CURSOS ── */}
           <SectionCard title="Estadísticas de Cursos">
             <div className="p-6 space-y-5">
               <div className="flex gap-2">
-                <button onClick={() => { setModoCurso('global'); setCursoIdSeleccionado(null); setStatsCurso(null); }}
+                <button onClick={() => { setModoCurso('global'); setCursoIdSeleccionado(null); setStatsCurso(null); setCursoSelectorOpen(false); setCursoSelectorQuery(''); }}
                   className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${modoCurso === 'global' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-slate-400'}`}>
                   Global
                 </button>
@@ -409,24 +431,107 @@ export default function AdminDashboard() {
 
               {modoCurso === 'curso' && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <BookOpen size={13} className="text-blue-500" /> Selecciona un curso
-                  </p>
-                  <SearchBox value={searchStatsCurso} onChange={setSearchStatsCurso} placeholder="Buscar curso..." />
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {cursosStatsFiltrados.map(c => (
-                      <button key={c.curso_id}
-                        onClick={() => { setCursoIdSeleccionado(c.curso_id); cargarStatsCurso(c.curso_id); }}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${cursoIdSeleccionado === c.curso_id ? 'bg-blue-50 border-blue-300' : 'bg-slate-50 border-slate-100 hover:border-blue-200'}`}>
-                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0">
-                          <img src={c.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
+
+                  {/* Selector popup */}
+                  <div className="relative" ref={cursoSelectorRef}>
+                    {/* Chip cuando hay curso seleccionado */}
+                    {cursoIdSeleccionado && (() => {
+                      const curso = cursos.find(c => c.curso_id === cursoIdSeleccionado);
+                      return curso ? (
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0">
+                            <img src={curso.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-slate-900 truncate">{curso.titulo}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Curso seleccionado</p>
+                          </div>
+                          <button
+                            onClick={() => { setCursoIdSeleccionado(null); setStatsCurso(null); setCursoSelectorOpen(false); }}
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-100 hover:text-red-500 transition-all shrink-0"
+                          >
+                            <X size={13} />
+                          </button>
                         </div>
-                        <p className="text-xs font-bold text-slate-700 truncate">{c.titulo}</p>
+                      ) : null;
+                    })()}
+
+                    {/* Trigger cuando no hay curso seleccionado */}
+                    {!cursoIdSeleccionado && (
+                      <button
+                        type="button"
+                        onClick={() => { setCursoSelectorOpen(true); setTimeout(() => cursoSelectorInputRef.current?.focus(), 50); }}
+                        className="w-full flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-400 text-sm font-bold hover:border-slate-200 transition-all"
+                      >
+                        <Search size={14} className="shrink-0" />
+                        <span className="flex-1 text-left">Buscar curso...</span>
+                        <ChevronDown size={14} className="shrink-0" />
                       </button>
-                    ))}
+                    )}
+
+                    {/* Popup */}
+                    {cursoSelectorOpen && (
+                      <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100">
+                          <Search size={13} className="text-slate-300 shrink-0" />
+                          <input
+                            ref={cursoSelectorInputRef}
+                            type="text"
+                            placeholder="Nombre del curso..."
+                            value={cursoSelectorQuery}
+                            onChange={e => setCursoSelectorQuery(e.target.value)}
+                            className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 font-medium"
+                          />
+                          {cursoSelectorQuery && (
+                            <button onClick={() => setCursoSelectorQuery('')} className="text-slate-300 hover:text-slate-500">
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-52 overflow-y-auto">
+                          {cursos
+                            .filter(c => !cursoSelectorQuery || c.titulo.toLowerCase().includes(cursoSelectorQuery.toLowerCase()))
+                            .map(c => (
+                              <button
+                                key={c.curso_id}
+                                type="button"
+                                onClick={() => {
+                                  setCursoIdSeleccionado(c.curso_id);
+                                  cargarStatsCurso(c.curso_id);
+                                  setCursoSelectorOpen(false);
+                                  setCursoSelectorQuery('');
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                              >
+                                <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0">
+                                  <img src={c.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-slate-700 truncate">{c.titulo}</p>
+                                  <p className="text-[9px] text-slate-400 truncate">Por: {c.nombre_creador || 'Sistema'}</p>
+                                </div>
+                              </button>
+                            ))}
+                          {cursos.filter(c => !cursoSelectorQuery || c.titulo.toLowerCase().includes(cursoSelectorQuery.toLowerCase())).length === 0 && (
+                            <p className="text-center text-xs text-slate-400 font-bold py-6">Sin resultados</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {loadingStatsCurso && <div className="flex justify-center py-6"><Loader2 className="animate-spin text-blue-400" size={24} /></div>}
+                  {loadingStatsCurso && (
+                    <div className="flex justify-center py-6">
+                      <Loader2 className="animate-spin text-blue-400" size={24} />
+                    </div>
+                  )}
+
+                  {!cursoIdSeleccionado && !loadingStatsCurso && (
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-300">
+                      <BookOpen size={36} strokeWidth={1} className="mb-3" />
+                      <p className="text-xs font-bold text-slate-400">Selecciona un curso para ver sus estadísticas</p>
+                    </div>
+                  )}
 
                   {statsCurso && !loadingStatsCurso && (
                     <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in duration-200">
@@ -482,8 +587,12 @@ export default function AdminDashboard() {
               )}
             </div>
           </SectionCard>
+        </div>
+      )}
 
-          {/* ── ESTADÍSTICAS DE USUARIOS ── */}
+    {activeTab === 'estadisticasAlumnos' && (
+      <div>
+        {/* ── ESTADÍSTICAS DE USUARIOS ── */}
           <SectionCard title="Estadísticas de Usuarios">
             <div className="p-6 space-y-5">
               <div className="flex gap-2">
@@ -561,22 +670,96 @@ export default function AdminDashboard() {
 
               {selectedUsuario !== 'global' && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <UserCircle size={13} className="text-blue-500" /> Selecciona un usuario
-                  </p>
-                  <SearchBox value={searchStatsUsuario} onChange={setSearchStatsUsuario} placeholder="Buscar usuario..." />
-                  <div className="space-y-2 max-h-52 overflow-y-auto">
-                    {usuariosStatsFiltrados.map(a => (
-                      <button key={a.value}
-                        onClick={() => { setSelectedUsuario(a.value); cargarStatsUsuario(a.value); }}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selectedUsuario === a.value ? 'bg-blue-50 border-blue-300' : 'bg-slate-50 border-slate-100 hover:border-blue-200'}`}>
-                        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">{a.label?.[0]}</div>
-                        <p className="text-xs font-bold text-slate-700 truncate">{a.label}</p>
+                  {/* Selector popup */}
+                  <div className="relative" ref={selectorRef}>
+                    {/* Chip cuando hay alumno seleccionado */}
+                    {selectedUsuario !== 'pick' && (() => {
+                      const alumno = alumnos.find(a => String(a.value) === String(selectedUsuario));
+                      return alumno ? (
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-black shrink-0">
+                            {alumno.label.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-slate-900 truncate">{alumno.label}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Alumno seleccionado</p>
+                          </div>
+                          <button
+                            onClick={() => { setSelectedUsuario('pick'); setStatsUsuarioIndividual(null); setSelectorOpen(false); }}
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-100 hover:text-red-500 transition-all shrink-0"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Trigger cuando está en 'pick' sin alumno aún */}
+                    {selectedUsuario === 'pick' && (
+                      <button
+                        type="button"
+                        onClick={() => { setSelectorOpen(true); setTimeout(() => selectorInputRef.current?.focus(), 50); }}
+                        className="w-full flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-400 text-sm font-bold hover:border-slate-200 transition-all"
+                      >
+                        <Search size={14} className="shrink-0" />
+                        <span className="flex-1 text-left">Buscar alumno...</span>
+                        <ChevronDown size={14} className="shrink-0" />
                       </button>
-                    ))}
+                    )}
+
+                    {/* Popup */}
+                    {selectorOpen && (
+                      <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100">
+                          <Search size={13} className="text-slate-300 shrink-0" />
+                          <input
+                            ref={selectorInputRef}
+                            type="text"
+                            placeholder="Nombre..."
+                            value={selectorQuery}
+                            onChange={e => setSelectorQuery(e.target.value)}
+                            className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 font-medium"
+                          />
+                          {selectorQuery && (
+                            <button onClick={() => setSelectorQuery('')} className="text-slate-300 hover:text-slate-500">
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-52 overflow-y-auto">
+                          {alumnos
+                            .filter(a => !selectorQuery || a.label.toLowerCase().includes(selectorQuery.toLowerCase()))
+                            .map(alumno => (
+                              <button
+                                key={alumno.value}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedUsuario(alumno.value);
+                                  cargarStatsUsuario(alumno.value);
+                                  setSelectorOpen(false);
+                                  setSelectorQuery('');
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                              >
+                                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-black shrink-0">
+                                  {alumno.label.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                                </div>
+                                <span className="text-sm font-bold text-slate-700 truncate">{alumno.label}</span>
+                              </button>
+                            ))}
+                          {alumnos.filter(a => !selectorQuery || a.label.toLowerCase().includes(selectorQuery.toLowerCase())).length === 0 && (
+                            <p className="text-center text-xs text-slate-400 font-bold py-6">Sin resultados</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {loadingStatsUsuario && <div className="flex justify-center py-6"><Loader2 className="animate-spin text-blue-400" size={24} /></div>}
+                  {loadingStatsUsuario && (
+                    <div className="flex justify-center py-6">
+                      <Loader2 className="animate-spin text-blue-400" size={24} />
+                    </div>
+                  )}
 
                   {statsUsuarioIndividual && !loadingStatsUsuario && (
                     <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in duration-200">
@@ -612,13 +795,19 @@ export default function AdminDashboard() {
                       </Link>
                     </div>
                   )}
+
+                  {selectedUsuario === 'pick' && !loadingStatsUsuario && (
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-300">
+                      <UserCircle size={36} strokeWidth={1} className="mb-3" />
+                      <p className="text-xs font-bold text-slate-400">Selecciona un alumno para ver sus estadísticas</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </SectionCard>
-
-        </div>
-      )}
+      </div>
+    )}
     </div>
   );
 }
