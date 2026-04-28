@@ -7,7 +7,7 @@ import {
   Trash2, Users, CheckCircle, BarChart3, TrendingUp, 
   UserCircle, FileText, ExternalLink, HelpCircle, Search, 
   Tag, Edit3, X, Check, Activity, BookCheck,
-  Award, Layers, Eye
+  Award, Layers, Eye, PenLine, UserRoundPlus
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -189,28 +189,28 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="max-w-[1800px] mx-auto p-6 lg:p-10 font-sans">
+    <div className="max-w-[1800px] mx-auto font-sans mt-6">
       <PageHeader title="Panel de Control" subtitle="Gestión de Capacitación Whirlpool" icon={ShieldCheck} />
 
-      <div className="flex justify-start md:gap-4 border-b border-slate-200 mb-8">
+      <div className="flex justify-center md:gap-16 border-b border-slate-200 mb-8">
         <TabButton active={activeTab === 'cursos'} onClick={() => setActiveTab('cursos')} icon={BookOpen} label="Cursos" count={cursos.length} />
         <TabButton active={activeTab === 'estadisticas'} onClick={() => setActiveTab('estadisticas')} icon={BarChart3} label="Estadísticas" />
       </div>
 
       {/* ══════════ TAB: CURSOS ══════════ */}
       {activeTab === 'cursos' && (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-          <div className="xl:col-span-8 space-y-10">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+          <div className="xl:col-span-1 space-y-10">
 
             <SectionCard title="Catálogo Global" count={cursosFiltrados.length} action={<Button href="/admin/nuevo-curso" icon={Plus}>Crear Curso</Button>}>
-              <div className="px-4 pt-4"><SearchBox value={searchCursos} onChange={setSearchCursos} placeholder="Buscar por nombre, creador o categorías..." /></div>
-              <div className="overflow-x-auto p-2">
+              <div className="px-2 pt-4"><SearchBox value={searchCursos} onChange={setSearchCursos} placeholder="Buscar por nombre, creador o categorías..." /></div>
+              <div className="overflow-x-auto pt-2">
                 <table className="w-full text-left border-collapse">
                   <thead><tr className="bg-slate-50/50">
                     <th className="px-6 py-4"><Text variant="muted">Curso</Text></th>
-                    <th className="px-6 py-4"><Text variant="muted">Categorías</Text></th>
                     <th className="px-6 py-4"><Text variant="muted">Descripción</Text></th>
-                    <th className="px-6 py-4 text-right"><Text variant="muted">Acciones</Text></th>
+                    <th className="px-6 py-4"><Text variant="muted">Categorías</Text></th>
+                    <th className="px-6 py-4 text-center"><Text variant="muted">Acciones</Text></th>
                   </tr></thead>
                   <tbody className="divide-y divide-slate-50">
                     {cursosFiltrados.map((curso) => (
@@ -227,7 +227,10 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{curso.descripcionCorta || curso.descripcion}</Text>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-wrap gap-1.5 max-w-[64px]">
                             {curso.categorias ? curso.categorias.split(', ').map((cat, i) => (
                               <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600 text-[9px] font-black uppercase border border-blue-100/50">
                                 <Tag size={8} />{cat}
@@ -235,13 +238,11 @@ export default function AdminDashboard() {
                             )) : <span className="text-[9px] text-slate-300 italic font-bold">Sin categorías</span>}
                           </div>
                         </td>
-                        <td className="px-6 py-5">
-                          <Text variant="description" className="line-clamp-2 max-w-xs text-xs">{curso.descripcionCorta || curso.descripcion}</Text>
-                        </td>
                         <td className="px-6 py-5 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button href={`/admin/gestionar/${curso.curso_id}`} variant="ghost" className="h-8 text-[10px] font-black uppercase">Alumnos</Button>
-                            <Button href={`/admin/editar-curso/${curso.curso_id}`} variant="ghost" className="h-8 text-[10px] font-black uppercase">Editar</Button>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                          <div className="flex items-center col-1 justify-end gap-2">
+                            <a href={`/admin/gestionar/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><UserRoundPlus size={18} /></a>
+                            <a href={`/admin/editar-curso/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><PenLine size={18} /></a>
                             {rolId === 1 && <button onClick={() => eliminarCurso(curso.curso_id, curso.titulo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
                           </div>
                         </td>
@@ -249,32 +250,6 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Biblioteca de Materiales" count={materialesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-material" variant="dark" icon={Plus}>Nuevo Material</Button>}>
-              <div className="px-4 pt-4"><SearchBox value={searchMateriales} onChange={setSearchMateriales} placeholder="Buscar material..." /></div>
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {materialesFiltrados.map((m) => (
-                  <ResourceItem key={m.archivo_id} title={m.nombre_archivo} subtitle={m.tipo_archivo || 'Documento'} icon={FileText}
-                    action={<div className="flex items-center gap-1">
-                      {rolId === 1 && <button onClick={() => eliminarMaterial(m.archivo_id, m.nombre_archivo)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={18} /></button>}
-                      <a href={m.url_archivo} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><ExternalLink size={18} /></a>
-                    </div>} />
-                ))}
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Exámenes Disponibles" count={examenesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-examen" className="bg-purple-600 hover:bg-purple-700 shadow-purple-100" icon={Plus}>Crear Examen</Button>}>
-              <div className="px-4 pt-4"><SearchBox value={searchExamenes} onChange={setSearchExamenes} placeholder="Buscar examen..." /></div>
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {examenesFiltrados.map((ex) => (
-                  <ResourceItem key={ex.quiz_id} variant="purple" title={ex.titulo} subtitle={`${ex.total_preguntas || 0} Preguntas`} icon={HelpCircle}
-                    action={<div className="flex items-center gap-1">
-                      {rolId === 1 && <button onClick={() => eliminarExamen(ex.quiz_id, ex.titulo)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={18} /></button>}
-                      <Link href={`/admin/editar-examen/${ex.quiz_id}`} className="p-2 text-slate-300 hover:text-purple-600"><ChevronRight size={18} /></Link>
-                    </div>} />
-                ))}
               </div>
             </SectionCard>
 
@@ -318,27 +293,83 @@ export default function AdminDashboard() {
             </SectionCard>
           </div>
 
-          {/* ASIDE CURSOS — stats rápidas globales */}
-          <aside className="xl:col-span-4 space-y-6 lg:sticky lg:top-10">
-            <SectionCard title="Resumen Rápido">
-              <div className="p-6 space-y-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <TrendingUp size={13} className="text-blue-500" /> Vista Global
-                </p>
-                <StatCard icon={<BookOpen size={20} className="text-blue-600"/>} label="Cursos Totales" value={cursos.length} color="bg-blue-50" />
-                <StatCard icon={<Users size={20} className="text-purple-600"/>} label="Alumnos Inscritos" value={statsGlobal.totalAlumnos} color="bg-purple-50" />
-                <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Tasa de Finalización" value={`${statsGlobal.tasaCompletado}%`} color="bg-green-50" progress={statsGlobal.tasaCompletado} />
-                <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio en Quizzes" value={`${statsGlobal.promedioQuiz ?? 0} pts`} color="bg-orange-50" />
-                <StatCard icon={<FileText size={20} className="text-slate-500"/>} label="Materiales" value={materiales.length} color="bg-slate-100" />
-                <StatCard icon={<HelpCircle size={20} className="text-purple-500"/>} label="Exámenes" value={examenes.length} color="bg-purple-50" />
-                <div className="pt-3 border-t border-slate-100">
-                  <button onClick={() => setActiveTab('estadisticas')}
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-500 hover:text-blue-600 text-xs font-black rounded-2xl transition-all">
-                    <BarChart3 size={14} /> Ver estadísticas completas
-                  </button>
-                </div>
+          {/* ASIDE Materiales*/}
+          <aside className="xl:col-span-1 space-y-6 lg:sticky lg:top-10">
+            
+            <SectionCard title="Biblioteca de materiales" count={materialesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-material" variant="dark" icon={Plus}>Nuevo Material</Button>}>
+              <div className="px-4 pt-4"><SearchBox value={searchMateriales} onChange={setSearchMateriales} placeholder="Buscar material..." /></div>
+              <div className="overflow-x-auto p-2">
+                <table className="w-full text-left border-collapse">
+                  <thead><tr className="bg-slate-50/50">
+                    <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
+                    <th className="px-6 py-4"><Text variant="muted">Descripción</Text></th>
+                    <th className="px-6 py-4 text-center"><Text variant="muted">Tipo de material</Text></th>
+                    <th className="px-6 py-4 text-center"><Text variant="muted">Acciones</Text></th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {materialesFiltrados.map((m) => (
+                      <tr key={m.archivo_id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="min-w-0">
+                              <Text className="font-bold line-clamp-3 max-w-[128]">{m.nombre_archivo}</Text>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{m.descripcion}</Text>
+                        </td>
+                        <td className="px-6 py-5 text-center">
+                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{m.tipo_archivo}</Text>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <a href={m.url_archivo} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><Eye size={18} /></a>
+                            {rolId === 1 && <button onClick={() => eliminarMaterial(m.archivo_id, m.nombre_archivo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </SectionCard>
+
+            <SectionCard title="Exámenes Disponibles" count={examenesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-examen" className="bg-purple-600 hover:bg-purple-700 shadow-purple-100" icon={Plus}>Crear Examen</Button>}>
+              <div className="px-4 pt-4"><SearchBox value={searchExamenes} onChange={setSearchExamenes} placeholder="Buscar examen..." /></div>
+              <div className="overflow-x-auto p-2">
+                <table className="w-full text-left border-collapse">
+                  <thead><tr className="bg-slate-50/50">
+                    <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
+                    <th className="px-6 py-4"><Text variant="muted">Numero de preguntas</Text></th>
+                    <th className="px-6 py-4 text-right"><Text variant="muted">Acciones</Text></th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {examenesFiltrados.map((q) => (
+                      <tr key={q.quiz_id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="min-w-0">
+                              <Text className="font-bold line-clamp-3 max-w-[128]">{q.titulo}</Text>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{q.total_preguntas}</Text>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link href={`/admin/editar-examen/${q.quiz_id}`} className="p-2 text-slate-300 hover:text-purple-600"><ChevronRight size={18} /></Link>
+                            {rolId === 1 && <button onClick={() => eliminarExamen(q.quiz_id, q.titulo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </SectionCard>
+
           </aside>
         </div>
       )}
