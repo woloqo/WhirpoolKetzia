@@ -1,10 +1,11 @@
+// src/app/api/auth/[...nextauth]/route.js
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcrypt"; // Asegúrate de tenerlo importado si usas Credentials
 import { pool } from "@/lib/db";
-import bcrypt from "bcrypt";
 
-
+// --- FUNCIÓN DE RACHAS (Intacta, solo con una validación de seguridad extra) ---
 const actualizarRacha = async (usuario_id) => {
   const hoy = new Date().toISOString().split('T')[0];
 
@@ -12,6 +13,9 @@ const actualizarRacha = async (usuario_id) => {
     'SELECT racha_actual, mejor_racha, ultima_racha_fecha FROM Usuarios WHERE usuario_id = ?',
     [usuario_id]
   );
+  
+  if (!rows[0]) return; // Por seguridad, si no hay usuario, salimos.
+  
   const u = rows[0];
   const ultimaFecha = u.ultima_racha_fecha
     ? new Date(u.ultima_racha_fecha).toISOString().split('T')[0]
@@ -36,9 +40,9 @@ const actualizarRacha = async (usuario_id) => {
   );
 };
 
-// src/app/api/auth/[...nextauth]/route.js
+// --- CONFIGURACIÓN DE NEXTAUTH ---
 export const authOptions = {
- secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
   providers: [
     GoogleProvider({
@@ -46,7 +50,6 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
 
-    // NUEVO: login con email/password
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -59,14 +62,17 @@ export const authOptions = {
           [credentials.email]
         );
         const user = rows[0];
+        
         if (!user) return null;
 
         const isMatch = await bcrypt.compare(
           credentials.password,
           user.password_hash
         );
+        
         if (!isMatch) return null;
 
+        // Retornamos el objeto con los datos que necesitamos en el token
         return {
           id: user.usuario_id.toString(),
           name: user.nombre,
@@ -80,33 +86,57 @@ export const authOptions = {
   ],
 
   callbacks: {
+    // Aquí interceptamos el login para registrar en BD (si es Google) y actualizar rachas
     async signIn({ user, account }) {
-      // Solo aplica para Google
-      if (account?.provider === "google") {
-        if (!user.email?.endsWith("@gmail.com") && !user.email?.endsWith("@whirlpool.com")) {
-          return false;
+      try {
+        let currentUserId = null;
+
+        if (account?.provider === "google") {
+          // Filtro de dominios
+          if (!user.email?.endsWith("@gmail.com") && !user.email?.endsWith("@whirlpool.com")) {
+            return false;
+          }
+          
+          const [rows] = await pool.query("SELECT usuario_id FROM Usuarios WHERE email = ?", [user.email]);
+          
+          if (rows.length === 0) {
+            // Usuario nuevo por Google
+            const [result] = await pool.query(
+              "INSERT INTO Usuarios (nombre, email, rol_id, password_hash) VALUES (?, ?, ?, ?)",
+              [user.name, user.email, 2, "SSO_GOOGLE"]
+            );
+            currentUserId = result.insertId;
+          } else {
+            // Usuario existente por Google
+            currentUserId = rows[0].usuario_id;
+          }
+        } else if (account?.provider === "credentials") {
+          // Si viene de Credentials, el ID ya viene en el objeto 'user' gracias a la función authorize()
+          currentUserId = user.usuario_id;
         }
-        const [rows] = await pool.query("SELECT * FROM Usuarios WHERE email = ?", [user.email]);
-        if (rows.length === 0) {
-          await pool.query(
-            "INSERT INTO Usuarios (nombre, email, rol_id, password_hash) VALUES (?, ?, ?, ?)",
-            [user.name, user.email, 2, "SSO_GOOGLE"]
-          );
+
+        // Actualizamos la racha sin importar el proveedor
+        if (currentUserId) {
+          await actualizarRacha(currentUserId);
         }
+
+        return true;
+      } catch (error) {
+        console.error("Error en signIn:", error);
+        return false;
       }
-      return true;
     },
 
     // Guardamos datos custom en el JWT token
     async jwt({ token, user, account }) {
       if (user) {
         if (account?.provider === "credentials") {
-          // Viene del CredentialsProvider — ya tiene usuario_id y rol_id
+          // Viene del CredentialsProvider — ya tiene la data
           token.usuario_id = user.usuario_id;
           token.rol_id = user.rol_id;
           token.pfp = user.pfp;
         } else {
-          // Viene de Google — los buscamos en la BD
+          // Viene de Google — lo buscamos en la BD para popular el token
           const [rows] = await pool.query(
             "SELECT usuario_id, rol_id, pfp FROM Usuarios WHERE email = ?",
             [token.email]
@@ -121,16 +151,18 @@ export const authOptions = {
       return token;
     },
 
-    // Exponemos los datos del token en la sesión
+    // Exponemos los datos del token en la sesión cliente
     async session({ session, token }) {
-      session.user.usuario_id = token.usuario_id;
-      session.user.rol_id = token.rol_id;
-      session.user.pfp = token.pfp;
+      if (token && session.user) {
+        session.user.usuario_id = token.usuario_id;
+        session.user.rol_id = token.rol_id;
+        session.user.pfp = token.pfp;
+      }
       return session;
     },
   },
 
-  session: { strategy: "jwt" }, // Importante para que funcione con Credentials
+  session: { strategy: "jwt" }, // OBLIGATORIO para usar CredentialsProvider
   pages: { signIn: "/login", error: "/login" },
 };
 

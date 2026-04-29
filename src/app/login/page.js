@@ -41,10 +41,6 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-
-    // La sesión ahora la maneja NextAuth — solo guardamos lo extra en localStorage
-    // para el Sidebar (rol_id, nombre_usuario)
-    // Estos los obtenemos con useSession() o con una llamada a /api/usuario
     router.push("/");
     router.refresh();
   };
