@@ -35,6 +35,6 @@ export const config = {
     // Protege todas las rutas API excepto auth, login y registro
     "/api/((?!auth|login|registro).*)",
     // Protege todas las páginas excepto login y registro
-    "/((?!login|registro|_next/static|_next/image|favicon.ico).*)",
+    "/((?!login|registro|_next/static|_next/image|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|favicon.ico).*)",
   ],
 };
