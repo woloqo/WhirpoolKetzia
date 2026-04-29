@@ -15,56 +15,38 @@ export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Si hay sesión de Google activa, guardar en localStorage y redirigir
   useEffect(() => {
-  if (status === 'loading') return;
-  
-  if (status === 'authenticated' && session?.user) {
-    const uid = session.user.usuario_id?.toString();
-    const rol = session.user.rol_id?.toString();
-    const nombre = session.user.name || '';
-
-    if (uid) {
-      localStorage.clear();
-      localStorage.setItem('usuario_id', uid);
-      localStorage.setItem('rol_id', rol || '2');
-      localStorage.setItem('nombre_usuario', nombre);
-      router.push('/');
+    if (status === "authenticated" && session?.user) {
+      localStorage.setItem("usuario_id", session.user.usuario_id?.toString());
+      localStorage.setItem("rol_id", session.user.rol_id?.toString());
+      localStorage.setItem("nombre_usuario", session.user.name);
+      localStorage.setItem("usuario_pfp", session.user.pfp || "");
+      router.push("/");
     }
-  }
-}, [status, session]);
+  }, [status, session]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false, // Manejamos la redirección manualmente
+    });
 
-      const data = await res.json();
-      
-      if (res.ok) {
-        localStorage.clear();
-        localStorage.setItem('usuario_id', data.user.id.toString());
-        localStorage.setItem('rol_id', data.user.rol.toString());
-        localStorage.setItem('nombre_usuario', data.user.nombre);
-        localStorage.setItem('usuario_pfp', data.user.pfp || ''); 
-        
-        router.push('/');
-        router.refresh(); 
-      } else {
-        setError(data.error || 'Credenciales inválidas');
-      }
-    } catch (err) {
-      setError('Hubo un problema al conectar con el servidor.');
-    } finally {
+    if (result?.error) {
+      setError("Credenciales inválidas");
       setLoading(false);
+      return;
     }
+
+    // La sesión ahora la maneja NextAuth — solo guardamos lo extra en localStorage
+    // para el Sidebar (rol_id, nombre_usuario)
+    // Estos los obtenemos con useSession() o con una llamada a /api/usuario
+    router.push("/");
+    router.refresh();
   };
 
   const handleGoogleLogin = async () => {

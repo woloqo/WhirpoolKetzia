@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireSession, requireOwner } from "@/lib/auth";
 
 const LIMITE_GEMAS = 10;
 
@@ -38,7 +39,13 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const { error, session } = await requireSession();
+    if (error) return error;
+    
     const { usuario_id, titulo, descripcion, categorias } = await request.json();
+
+    const ownerCheck = await requireOwner(usuario_id);
+    if (ownerCheck.error) return ownerCheck.error;
 
     if (!usuario_id || !titulo || !descripcion) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
@@ -76,7 +83,14 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
+    const { error, session } = await requireSession();
+    if (error) return error;
+    
     const { gema_id, usuario_id, titulo, descripcion, categorias } = await request.json();
+    
+    const ownerCheck = await requireOwner(usuario_id);
+    if (ownerCheck.error) return ownerCheck.error;
+
 
     if (!gema_id || !usuario_id || !titulo || !descripcion) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
@@ -105,9 +119,15 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
+    const { error, session } = await requireSession();
+    if (error) return error;
+    
     const { searchParams } = new URL(request.url);
     const gema_id = searchParams.get('gema_id');
     const usuario_id = searchParams.get('usuario_id');
+
+    const ownerCheck = await requireOwner(usuario_id);
+    if (ownerCheck.error) return ownerCheck.error;
 
     await pool.query(
       'DELETE FROM Gemas WHERE gema_id = ? AND usuario_id = ?',

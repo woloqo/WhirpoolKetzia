@@ -1,6 +1,9 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { pool } from "@/lib/db";
+import bcrypt from "bcrypt";
+
 
 const actualizarRacha = async (usuario_id) => {
   const hoy = new Date().toISOString().split('T')[0];
@@ -33,58 +36,103 @@ const actualizarRacha = async (usuario_id) => {
   );
 };
 
-const handler = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
+// src/app/api/auth/[...nextauth]/route.js
+export const authOptions = {
+ secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
+
+    // NUEVO: login con email/password
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const [rows] = await pool.query(
+          "SELECT * FROM Usuarios WHERE email = ?",
+          [credentials.email]
+        );
+        const user = rows[0];
+        if (!user) return null;
+
+        const isMatch = await bcrypt.compare(
+          credentials.password,
+          user.password_hash
+        );
+        if (!isMatch) return null;
+
+        return {
+          id: user.usuario_id.toString(),
+          name: user.nombre,
+          email: user.email,
+          usuario_id: user.usuario_id,
+          rol_id: user.rol_id,
+          pfp: user.pfp,
+        };
+      },
+    }),
   ],
+
   callbacks: {
-    async signIn({ user }) {
-      if (!user.email?.endsWith("@gmail.com") && !user.email?.endsWith("@whirlpool.com")) {
-        return false;
-      }
-      try {
-        const [rows] = await pool.query('SELECT * FROM Usuarios WHERE email = ?', [user.email]);
-        
+    async signIn({ user, account }) {
+      // Solo aplica para Google
+      if (account?.provider === "google") {
+        if (!user.email?.endsWith("@gmail.com") && !user.email?.endsWith("@whirlpool.com")) {
+          return false;
+        }
+        const [rows] = await pool.query("SELECT * FROM Usuarios WHERE email = ?", [user.email]);
         if (rows.length === 0) {
           await pool.query(
-            'INSERT INTO Usuarios (nombre, email, rol_id, password_hash) VALUES (?, ?, ?, ?)',
-            [user.name, user.email, 2, 'SSO_GOOGLE']
+            "INSERT INTO Usuarios (nombre, email, rol_id, password_hash) VALUES (?, ?, ?, ?)",
+            [user.name, user.email, 2, "SSO_GOOGLE"]
           );
         }
-
-        // Actualizar racha
-        const [userRows] = await pool.query('SELECT usuario_id FROM Usuarios WHERE email = ?', [user.email]);
-        if (userRows[0]) await actualizarRacha(userRows[0].usuario_id);
-
-        return true;
-      } catch (error) {
-        console.error('Error al guardar usuario SSO:', error);
-        return false;
       }
+      return true;
     },
 
-    async session({ session }) {
-      try {
-        const [rows] = await pool.query(
-          'SELECT usuario_id, rol_id FROM Usuarios WHERE email = ?',
-          [session.user.email]
-        );
-        if (rows.length > 0) {
-          session.user.usuario_id = rows[0].usuario_id;
-          session.user.rol_id = rows[0].rol_id;
+    // Guardamos datos custom en el JWT token
+    async jwt({ token, user, account }) {
+      if (user) {
+        if (account?.provider === "credentials") {
+          // Viene del CredentialsProvider — ya tiene usuario_id y rol_id
+          token.usuario_id = user.usuario_id;
+          token.rol_id = user.rol_id;
+          token.pfp = user.pfp;
+        } else {
+          // Viene de Google — los buscamos en la BD
+          const [rows] = await pool.query(
+            "SELECT usuario_id, rol_id, pfp FROM Usuarios WHERE email = ?",
+            [token.email]
+          );
+          if (rows[0]) {
+            token.usuario_id = rows[0].usuario_id;
+            token.rol_id = rows[0].rol_id;
+            token.pfp = rows[0].pfp;
+          }
         }
-      } catch (error) {
-        console.error('Error al obtener sesión:', error);
       }
+      return token;
+    },
+
+    // Exponemos los datos del token en la sesión
+    async session({ session, token }) {
+      session.user.usuario_id = token.usuario_id;
+      session.user.rol_id = token.rol_id;
+      session.user.pfp = token.pfp;
       return session;
     },
   },
-  pages: { signIn: "/login", error: "/login" },
-});
 
+  session: { strategy: "jwt" }, // Importante para que funcione con Credentials
+  pages: { signIn: "/login", error: "/login" },
+};
+
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

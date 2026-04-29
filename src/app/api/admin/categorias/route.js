@@ -1,8 +1,12 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 // Obtener todas las categorías para el listado
 export async function GET() {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   try {
     const [rows] = await pool.query('SELECT categoria_id, nombre FROM Categorias ORDER BY nombre ASC');
     return NextResponse.json(rows);
@@ -14,6 +18,9 @@ export async function GET() {
 
 // Crear una nueva categoría
 export async function POST(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   try {
     const { nombre } = await request.json();
 
@@ -46,6 +53,9 @@ export async function POST(request) {
 
 // DELETE: Eliminar categoría
 export async function DELETE(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   try {
@@ -58,6 +68,9 @@ export async function DELETE(request) {
 
 // PUT: Actualizar nombre
 export async function PUT(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   try {
     const { id, nombre } = await request.json();
     await pool.query('UPDATE Categorias SET nombre = ? WHERE categoria_id = ?', [nombre, id]);

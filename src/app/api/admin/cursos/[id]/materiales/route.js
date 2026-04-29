@@ -1,7 +1,11 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
   try {
     const [rows] = await pool.query(`
@@ -18,6 +22,9 @@ export async function GET(request, { params }) {
 }
 
 export async function POST(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
   try {
     const { archivo_id, seccion_id } = await request.json();
@@ -36,6 +43,9 @@ export async function POST(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
   const { searchParams } = new URL(request.url);
   const relacion_id = searchParams.get('relacion_id');
@@ -48,6 +58,9 @@ export async function DELETE(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
   try {
     const { materiales } = await request.json();

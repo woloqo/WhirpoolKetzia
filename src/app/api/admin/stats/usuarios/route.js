@@ -1,7 +1,12 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET() {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+  
+
   try {
     const [
       [totalUsuarios],

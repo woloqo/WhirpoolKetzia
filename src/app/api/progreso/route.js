@@ -1,5 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireSession, requireOwner } from "@/lib/auth";
+
 
 export async function POST(request) {
   try {

@@ -1,8 +1,12 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { notificarRecordatorio } from '@/lib/email';
+import { requireAdmin } from "@/lib/auth";
 
 export async function POST(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   try {
     // Buscar alumnos con cursos sin avance en los últimos 7 días
     const [alumnos] = await pool.query(`

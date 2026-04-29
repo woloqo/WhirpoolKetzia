@@ -1,8 +1,12 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 // GET: Obtener quiz completo con preguntas y opciones (incluyendo cuál es correcta)
 export async function GET(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
 
   try {
@@ -36,6 +40,9 @@ export async function GET(request, { params }) {
 
 // PUT: Actualizar quiz completo (título, descripción, preguntas y opciones)
 export async function PUT(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
   const connection = await pool.getConnection();
 

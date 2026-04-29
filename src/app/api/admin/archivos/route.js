@@ -1,7 +1,11 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET() {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   try {
     const [rows] = await pool.query(`
       SELECT archivo_id, nombre_archivo, tipo_archivo, descripcion, url_archivo, fecha_subida
@@ -16,6 +20,8 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
   try {
     const { nombre_archivo, tipo_archivo, descripcion, url_archivo } = await request.json();
 
@@ -48,6 +54,9 @@ export async function POST(request) {
 }
 
 export async function DELETE(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+  
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 

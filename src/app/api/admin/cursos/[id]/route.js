@@ -1,7 +1,11 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 export async function PUT(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
 
   try {
@@ -20,6 +24,9 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { id } = await params;
 
   try {

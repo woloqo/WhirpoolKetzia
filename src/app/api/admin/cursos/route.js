@@ -1,7 +1,11 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 export async function POST(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const connection = await pool.getConnection();
   
   try {

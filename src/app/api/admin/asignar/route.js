@@ -1,7 +1,11 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   const { searchParams } = new URL(request.url);
   const curso_id = searchParams.get('curso_id');
 
@@ -27,6 +31,9 @@ export async function GET(request) {
 }
 
 export async function DELETE(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   try {
     const { usuario_id, curso_id } = await request.json();
     await pool.query(
@@ -40,6 +47,9 @@ export async function DELETE(request) {
 }
 
 export async function POST(request) {
+  const { error } = await requireAdmin();
+  if (error) return error; 
+
   try {
     const { usuario_id, curso_id } = await request.json();
 
