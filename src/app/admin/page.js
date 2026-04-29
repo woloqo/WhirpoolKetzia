@@ -81,7 +81,7 @@ export default function AdminDashboard() {
   const [loadingStatsCurso, setLoadingStatsCurso] = useState(false);
 
   const [statsUsuarios, setStatsUsuarios] = useState(null);
-  const [selectedUsuario, setSelectedUsuario] = useState('global');
+  const [selectedUsuario, setSelectedUsuario] = useState('pick');
   const [statsUsuarioIndividual, setStatsUsuarioIndividual] = useState(null);
   const [loadingStatsUsuario, setLoadingStatsUsuario] = useState(false);
 
@@ -210,466 +210,455 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="max-w-[1800px] mt-4 mb-12 pb-6">
+    <div className="mt-4 mb-12 pb-6 mx-auto">
       <div className='px-6 pt-2 mx-2'>
         <PageHeader title="Panel de Control" subtitle="Gestión de Capacitación Whirlpool" icon={ShieldCheck} />
       </div>
 
-      <div className="flex justify-center md:gap-16 border-b border-slate-200 mb-8">
+      <div className="flex w-full justify-center md:gap-16 border-b border-slate-200 mb-2 mx-auto">
         <TabButton active={activeTab === 'cursos'} onClick={() => setActiveTab('cursos')} icon={BookOpen} label="Cursos" />
         <TabButton active={activeTab === 'estadisticasCursos'} onClick={() => setActiveTab('estadisticasCursos')} icon={BarChart3} label="Estadísticas de cursos" />
         <TabButton active={activeTab === 'estadisticasAlumnos'} onClick={() => setActiveTab('estadisticasAlumnos')} icon={BarChart3} label="Estadísticas de alumnos" />
       </div>
 
-      {/* ══════════ TAB: CURSOS ══════════ */}
-      {activeTab === 'cursos' && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-          <div className="xl:col-span-1 space-y-10">
+      <div className='max-w-[1800px] mx-auto'>  
+        {/* ══════════ TAB: CURSOS ══════════ */}
+        {activeTab === 'cursos' && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start m-2">
+            <div className="xl:col-span-1 space-y-10">
 
-            <SectionCard title="Catálogo Global" count={cursosFiltrados.length} action={<Button href="/admin/nuevo-curso" icon={Plus}>Crear Curso</Button>}>
-              <div className="px-2 pt-4"><SearchBox value={searchCursos} onChange={setSearchCursos} placeholder="Buscar por nombre, creador o categorías..." /></div>
-              <div className="overflow-x-auto pt-2">
-                <table className="w-full text-left border-collapse">
-                  <thead><tr className="bg-slate-50/50">
-                    <th className="px-6 py-4"><Text variant="muted">Curso</Text></th>
-                    <th className="px-6 py-4"><Text variant="muted">Descripción</Text></th>
-                    <th className="px-6 py-4"><Text variant="muted">Categorías</Text></th>
-                    <th className="px-6 py-4 text-center"><Text variant="muted">Acciones</Text></th>
-                  </tr></thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {cursosFiltrados.map((curso) => (
-                      <tr key={curso.curso_id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
-                              <img src={curso.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
+              <SectionCard title="Catálogo Global" count={cursosFiltrados.length} action={<Button href="/admin/nuevo-curso" icon={Plus}>Crear Curso</Button>}>
+                <div className="px-2 pt-4"><SearchBox value={searchCursos} onChange={setSearchCursos} placeholder="Buscar por nombre, creador o categorías..." /></div>
+                <div className="overflow-x-auto pt-2">
+                  <table className="w-full text-left border-collapse">
+                    <thead><tr className="bg-slate-50/50">
+                      <th className="px-6 py-4"><Text variant="muted">Curso</Text></th>
+                      <th className="px-6 py-4"><Text variant="muted">Descripción</Text></th>
+                      <th className="px-6 py-4"><Text variant="muted">Categorías</Text></th>
+                      <th className="px-6 py-4 text-center"><Text variant="muted">Acciones</Text></th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {cursosFiltrados.map((curso) => (
+                        <tr key={curso.curso_id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
+                                <img src={curso.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
+                              </div>
+                              <div className="min-w-0">
+                                <Text className="font-bold truncate">{curso.titulo}</Text>
+                                <Text variant="muted" className="text-[10px] font-black tracking-tighter uppercase">Por: {curso.nombre_creador || 'SISTEMA'}</Text>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <Text className="font-bold truncate">{curso.titulo}</Text>
-                              <Text variant="muted" className="text-[10px] font-black tracking-tighter uppercase">Por: {curso.nombre_creador || 'SISTEMA'}</Text>
+                          </td>
+                          <td className="px-6 py-5">
+                            <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{curso.descripcionCorta || curso.descripcion}</Text>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex flex-wrap gap-1.5 max-w-[64px]">
+                              {curso.categorias ? curso.categorias.split(', ').map((cat, i) => (
+                                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600 text-[9px] font-black uppercase border border-blue-100/50">
+                                  <Tag size={8} />{cat}
+                                </span>
+                              )) : <span className="text-[9px] text-slate-300 italic font-bold">Sin categorías</span>}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{curso.descripcionCorta || curso.descripcion}</Text>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex flex-wrap gap-1.5 max-w-[64px]">
-                            {curso.categorias ? curso.categorias.split(', ').map((cat, i) => (
-                              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600 text-[9px] font-black uppercase border border-blue-100/50">
-                                <Tag size={8} />{cat}
-                              </span>
-                            )) : <span className="text-[9px] text-slate-300 italic font-bold">Sin categorías</span>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                          <div className="flex items-center col-1 justify-end gap-2">
-                            <a href={`/admin/gestionar/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><UserRoundPlus size={18} /></a>
-                            <a href={`/admin/editar-curso/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><PenLine size={18} /></a>
-                            {rolId === 1 && <button onClick={() => eliminarCurso(curso.curso_id, curso.titulo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Gestión de Categorías" count={categorias.length}>
-              <div className="p-2">
-                <div className="flex gap-3 py-2">
-                  <div className="relative flex-1">
-                    <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input type="text" placeholder="Nueva categoría..." value={nuevaCatNombre}
-                      onChange={(e) => setNuevaCatNombre(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && agregarCategoria()}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium" />
-                  </div>
-                  <Button onClick={agregarCategoria} variant="dark" icon={Plus} className="rounded-2xl px-6">Agregar</Button>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                            <div className="flex items-center col-1 justify-end gap-2">
+                              <a href={`/admin/gestionar/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><UserRoundPlus size={18} /></a>
+                              <a href={`/admin/editar-curso/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><PenLine size={18} /></a>
+                              {rolId === 1 && <button onClick={() => eliminarCurso(curso.curso_id, curso.titulo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 w-full">
-                  {categorias.map((cat) => (
-                    <div key={cat.categoria_id} className="w-full flex items-center justify-between p-2 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 transition-all group">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><Tag size={14} /></div>
-                        {editandoCatId === cat.categoria_id
-                          ? <input autoFocus className="flex-1 bg-slate-50 border-b border-blue-500 outline-none text-sm font-bold px-1" value={editandoCatNombre} onChange={(e) => setEditandoCatNombre(e.target.value)} />
-                          : <span className="text-sm font-bold text-slate-700 truncate">{cat.nombre}</span>}
+              </SectionCard>
+
+              <SectionCard title="Gestión de Categorías" count={categorias.length}>
+                <div className="p-2">
+                  <div className="flex gap-3 py-2">
+                    <div className="relative flex-1">
+                      <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                      <input type="text" placeholder="Nueva categoría..." value={nuevaCatNombre}
+                        onChange={(e) => setNuevaCatNombre(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && agregarCategoria()}
+                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium" />
+                    </div>
+                    <Button onClick={agregarCategoria} variant="dark" icon={Plus} className="rounded-2xl px-6">Agregar</Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 w-full">
+                    {categorias.map((cat) => (
+                      <div key={cat.categoria_id} className="w-full flex items-center justify-between p-2 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 transition-all group">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><Tag size={14} /></div>
+                          {editandoCatId === cat.categoria_id
+                            ? <input autoFocus className="flex-1 bg-slate-50 border-b border-blue-500 outline-none text-sm font-bold px-1" value={editandoCatNombre} onChange={(e) => setEditandoCatNombre(e.target.value)} />
+                            : <span className="text-sm font-bold text-slate-700 truncate">{cat.nombre}</span>}
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          {editandoCatId === cat.categoria_id ? (
+                            <>
+                              <button onClick={() => actualizarCategoria(cat.categoria_id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check size={16} /></button>
+                              <button onClick={() => setEditandoCatId(null)} className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg"><X size={16} /></button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => { setEditandoCatId(cat.categoria_id); setEditandoCatNombre(cat.nombre); }} className="p-1.5 text-slate-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"><Edit3 size={16} /></button>
+                              <button onClick={() => eliminarCategoria(cat.categoria_id, cat.nombre)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        {editandoCatId === cat.categoria_id ? (
-                          <>
-                            <button onClick={() => actualizarCategoria(cat.categoria_id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check size={16} /></button>
-                            <button onClick={() => setEditandoCatId(null)} className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg"><X size={16} /></button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => { setEditandoCatId(cat.categoria_id); setEditandoCatNombre(cat.nombre); }} className="p-1.5 text-slate-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"><Edit3 size={16} /></button>
-                            <button onClick={() => eliminarCategoria(cat.categoria_id, cat.nombre)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
-                          </>
+                    ))}
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* ASIDE Materiales*/}
+            <aside className="xl:col-span-1 space-y-6 lg:sticky lg:top-10">
+              <SectionCard title="Biblioteca de materiales" count={materialesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-material" variant="dark" icon={Plus}>Nuevo Material</Button>}>
+                <div className="px-2 py-2"><SearchBox value={searchMateriales} onChange={setSearchMateriales} placeholder="Buscar material..." /></div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead><tr className="bg-slate-50/50">
+                      <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
+                      <th className="px-6 py-4"><Text variant="muted">Descripción</Text></th>
+                      <th className="px-6 py-4 text-center"><Text variant="muted">Tipo de material</Text></th>
+                      <th className="px-6 py-4 text-center"><Text variant="muted">Acciones</Text></th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {materialesFiltrados.map((m) => (
+                        <tr key={m.archivo_id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="min-w-0">
+                                <Text className="font-bold line-clamp-3 max-w-[128]">{m.nombre_archivo}</Text>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{m.descripcion}</Text>
+                          </td>
+                          <td className="px-6 py-5 text-center">
+                            <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{m.tipo_archivo}</Text>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <a href={m.url_archivo} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><Eye size={18} /></a>
+                              {rolId === 1 && <button onClick={() => eliminarMaterial(m.archivo_id, m.nombre_archivo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Exámenes Disponibles" count={examenesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-examen" className="bg-purple-600 hover:bg-purple-700 shadow-purple-100" icon={Plus}>Crear Examen</Button>}>
+                <div className="px-2 py-2"><SearchBox value={searchExamenes} onChange={setSearchExamenes} placeholder="Buscar examen..." /></div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead><tr className="bg-slate-50/50">
+                      <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
+                      <th className="px-6 py-4"><Text variant="muted">Numero de preguntas</Text></th>
+                      <th className="px-6 py-4 text-right"><Text variant="muted">Acciones</Text></th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {examenesFiltrados.map((q) => (
+                        <tr key={q.quiz_id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="min-w-0">
+                                <Text className="font-bold line-clamp-3 max-w-[128]">{q.titulo}</Text>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{q.total_preguntas}</Text>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link href={`/admin/editar-examen/${q.quiz_id}`} className="p-2 text-slate-300 hover:text-purple-600"><ChevronRight size={18} /></Link>
+                              {rolId === 1 && <button onClick={() => eliminarExamen(q.quiz_id, q.titulo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </SectionCard>
+
+            </aside>
+          </div>
+        )}
+
+        {/* ══════════ TAB: ESTADÍSTICAS ══════════ */}
+        {activeTab === 'estadisticasCursos' && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start m-2">
+            <div className="xl:col-span-1 space-y-10">
+
+              {/* ── ESTADÍSTICAS DE CURSOS ── */}
+              <SectionCard title="Estadísticas de Cursos">
+                <div className="p-6 space-y-5">
+
+                    <div className="space-y-4 animate-in fade-in duration-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <TrendingUp size={13} className="text-blue-500" /> Rendimiento Global
+                      </p>
+                      <StatCard icon={<BookOpen size={20} className="text-blue-600"/>} label="Cursos Totales" value={cursos.length} color="bg-blue-50" />
+                      <StatCard icon={<Users size={20} className="text-purple-600"/>} label="Alumnos Inscritos" value={statsGlobal.totalAlumnos} color="bg-purple-50" />
+                      <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Tasa de Finalización" value={`${statsGlobal.tasaCompletado}%`} color="bg-green-50" progress={statsGlobal.tasaCompletado} />
+                      <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio en Quizzes" value={`${statsGlobal.promedioQuiz ?? 0} pts`} color="bg-orange-50" />
+                      <StatCard icon={<FileText size={20} className="text-slate-500"/>} label="Materiales Disponibles" value={materiales.length} color="bg-slate-100" />
+                      <StatCard icon={<HelpCircle size={20} className="text-purple-500"/>} label="Exámenes Disponibles" value={examenes.length} color="bg-purple-50" />
+                    </div>
+
+                </div>
+              </SectionCard>
+            </div>
+            <aside className="xl:col-span-1 space-y-6 lg:sticky lg:top-10">
+              <SectionCard title="Estadísticas por curso">
+                <div className="space-y-4 animate-in fade-in duration-200 m-6">
+
+                      {/* Selector popup */}
+                      <div className="relative" ref={cursoSelectorRef}>
+                        {/* Chip cuando hay curso seleccionado */}
+                        {cursoIdSeleccionado && (() => {
+                          const curso = cursos.find(c => c.curso_id === cursoIdSeleccionado);
+                          return curso ? (
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                              <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0">
+                                <img src={curso.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-black text-slate-900 truncate">{curso.titulo}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Curso seleccionado</p>
+                              </div>
+                              <button
+                                onClick={() => { setCursoIdSeleccionado(null); setStatsCurso(null); setCursoSelectorOpen(false); }}
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-100 hover:text-red-500 transition-all shrink-0"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+                          ) : null;
+                        })()}
+
+                        {/* Trigger cuando no hay curso seleccionado */}
+                        {!cursoIdSeleccionado && (
+                          <button
+                            type="button"
+                            onClick={() => { setCursoSelectorOpen(true); setTimeout(() => cursoSelectorInputRef.current?.focus(), 50); }}
+                            className="w-full flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-400 text-sm font-bold hover:border-slate-200 transition-all"
+                          >
+                            <Search size={14} className="shrink-0" />
+                            <span className="flex-1 text-left">Buscar curso...</span>
+                            <ChevronDown size={14} className="shrink-0" />
+                          </button>
+                        )}
+
+                        {/* Popup */}
+                        {cursoSelectorOpen && (
+                          <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100">
+                              <Search size={13} className="text-slate-300 shrink-0" />
+                              <input
+                                ref={cursoSelectorInputRef}
+                                type="text"
+                                placeholder="Nombre del curso..."
+                                value={cursoSelectorQuery}
+                                onChange={e => setCursoSelectorQuery(e.target.value)}
+                                className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 font-medium"
+                              />
+                              {cursoSelectorQuery && (
+                                <button onClick={() => setCursoSelectorQuery('')} className="text-slate-300 hover:text-slate-500">
+                                  <X size={13} />
+                                </button>
+                              )}
+                            </div>
+                            <div className="max-h-52 overflow-y-auto">
+                              {cursos
+                                .filter(c => !cursoSelectorQuery || c.titulo.toLowerCase().includes(cursoSelectorQuery.toLowerCase()))
+                                .map(c => (
+                                  <button
+                                    key={c.curso_id}
+                                    type="button"
+                                    onClick={() => {
+                                      setCursoIdSeleccionado(c.curso_id);
+                                      cargarStatsCurso(c.curso_id);
+                                      setCursoSelectorOpen(false);
+                                      setCursoSelectorQuery('');
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                                  >
+                                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0">
+                                      <img src={c.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold text-slate-700 truncate">{c.titulo}</p>
+                                      <p className="text-[9px] text-slate-400 truncate">Por: {c.nombre_creador || 'Sistema'}</p>
+                                    </div>
+                                  </button>
+                                ))}
+                              {cursos.filter(c => !cursoSelectorQuery || c.titulo.toLowerCase().includes(cursoSelectorQuery.toLowerCase())).length === 0 && (
+                                <p className="text-center text-xs text-slate-400 font-bold py-6">Sin resultados</p>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </SectionCard>
-          </div>
 
-          {/* ASIDE Materiales*/}
-          <aside className="xl:col-span-1 space-y-6 lg:sticky lg:top-10">
-            <SectionCard title="Biblioteca de materiales" count={materialesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-material" variant="dark" icon={Plus}>Nuevo Material</Button>}>
-              <div className="px-2 py-2"><SearchBox value={searchMateriales} onChange={setSearchMateriales} placeholder="Buscar material..." /></div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead><tr className="bg-slate-50/50">
-                    <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
-                    <th className="px-6 py-4"><Text variant="muted">Descripción</Text></th>
-                    <th className="px-6 py-4 text-center"><Text variant="muted">Tipo de material</Text></th>
-                    <th className="px-6 py-4 text-center"><Text variant="muted">Acciones</Text></th>
-                  </tr></thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {materialesFiltrados.map((m) => (
-                      <tr key={m.archivo_id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="min-w-0">
-                              <Text className="font-bold line-clamp-3 max-w-[128]">{m.nombre_archivo}</Text>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{m.descripcion}</Text>
-                        </td>
-                        <td className="px-6 py-5 text-center">
-                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{m.tipo_archivo}</Text>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <a href={m.url_archivo} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><Eye size={18} /></a>
-                            {rolId === 1 && <button onClick={() => eliminarMaterial(m.archivo_id, m.nombre_archivo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Exámenes Disponibles" count={examenesFiltrados.length} action={rolId === 1 && <Button href="/admin/nuevo-examen" className="bg-purple-600 hover:bg-purple-700 shadow-purple-100" icon={Plus}>Crear Examen</Button>}>
-              <div className="px-2 py-2"><SearchBox value={searchExamenes} onChange={setSearchExamenes} placeholder="Buscar examen..." /></div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead><tr className="bg-slate-50/50">
-                    <th className="px-6 py-4"><Text variant="muted">Nombre</Text></th>
-                    <th className="px-6 py-4"><Text variant="muted">Numero de preguntas</Text></th>
-                    <th className="px-6 py-4 text-right"><Text variant="muted">Acciones</Text></th>
-                  </tr></thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {examenesFiltrados.map((q) => (
-                      <tr key={q.quiz_id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="min-w-0">
-                              <Text className="font-bold line-clamp-3 max-w-[128]">{q.titulo}</Text>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <Text variant="description" className="line-clamp-2 max-w-[256] text-xs">{q.total_preguntas}</Text>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link href={`/admin/editar-examen/${q.quiz_id}`} className="p-2 text-slate-300 hover:text-purple-600"><ChevronRight size={18} /></Link>
-                            {rolId === 1 && <button onClick={() => eliminarExamen(q.quiz_id, q.titulo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-
-          </aside>
-        </div>
-      )}
-
-      {/* ══════════ TAB: ESTADÍSTICAS ══════════ */}
-      {activeTab === 'estadisticasCursos' && (
-        <div className="max-w-[1200px]">
-
-          {/* ── ESTADÍSTICAS DE CURSOS ── */}
-          <SectionCard title="Estadísticas de Cursos">
-            <div className="p-6 space-y-5">
-              <div className="flex gap-2">
-                <button onClick={() => { setModoCurso('global'); setCursoIdSeleccionado(null); setStatsCurso(null); setCursoSelectorOpen(false); setCursoSelectorQuery(''); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${modoCurso === 'global' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-slate-400'}`}>
-                  Global
-                </button>
-                <button onClick={() => setModoCurso('curso')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${modoCurso === 'curso' ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-blue-300'}`}>
-                  Por Curso
-                </button>
-              </div>
-
-              {modoCurso === 'global' && (
-                <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <TrendingUp size={13} className="text-blue-500" /> Rendimiento Global
-                  </p>
-                  <StatCard icon={<BookOpen size={20} className="text-blue-600"/>} label="Cursos Totales" value={cursos.length} color="bg-blue-50" />
-                  <StatCard icon={<Users size={20} className="text-purple-600"/>} label="Alumnos Inscritos" value={statsGlobal.totalAlumnos} color="bg-purple-50" />
-                  <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Tasa de Finalización" value={`${statsGlobal.tasaCompletado}%`} color="bg-green-50" progress={statsGlobal.tasaCompletado} />
-                  <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio en Quizzes" value={`${statsGlobal.promedioQuiz ?? 0} pts`} color="bg-orange-50" />
-                  <StatCard icon={<FileText size={20} className="text-slate-500"/>} label="Materiales Disponibles" value={materiales.length} color="bg-slate-100" />
-                  <StatCard icon={<HelpCircle size={20} className="text-purple-500"/>} label="Exámenes Disponibles" value={examenes.length} color="bg-purple-50" />
-                </div>
-              )}
-
-              {modoCurso === 'curso' && (
-                <div className="space-y-4 animate-in fade-in duration-200">
-
-                  {/* Selector popup */}
-                  <div className="relative" ref={cursoSelectorRef}>
-                    {/* Chip cuando hay curso seleccionado */}
-                    {cursoIdSeleccionado && (() => {
-                      const curso = cursos.find(c => c.curso_id === cursoIdSeleccionado);
-                      return curso ? (
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0">
-                            <img src={curso.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-black text-slate-900 truncate">{curso.titulo}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Curso seleccionado</p>
-                          </div>
-                          <button
-                            onClick={() => { setCursoIdSeleccionado(null); setStatsCurso(null); setCursoSelectorOpen(false); }}
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-red-100 hover:text-red-500 transition-all shrink-0"
-                          >
-                            <X size={13} />
-                          </button>
+                      {loadingStatsCurso && (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="animate-spin text-blue-400" size={24} />
                         </div>
-                      ) : null;
-                    })()}
+                      )}
 
-                    {/* Trigger cuando no hay curso seleccionado */}
-                    {!cursoIdSeleccionado && (
-                      <button
-                        type="button"
-                        onClick={() => { setCursoSelectorOpen(true); setTimeout(() => cursoSelectorInputRef.current?.focus(), 50); }}
-                        className="w-full flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-400 text-sm font-bold hover:border-slate-200 transition-all"
-                      >
-                        <Search size={14} className="shrink-0" />
-                        <span className="flex-1 text-left">Buscar curso...</span>
-                        <ChevronDown size={14} className="shrink-0" />
-                      </button>
-                    )}
-
-                    {/* Popup */}
-                    {cursoSelectorOpen && (
-                      <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100">
-                          <Search size={13} className="text-slate-300 shrink-0" />
-                          <input
-                            ref={cursoSelectorInputRef}
-                            type="text"
-                            placeholder="Nombre del curso..."
-                            value={cursoSelectorQuery}
-                            onChange={e => setCursoSelectorQuery(e.target.value)}
-                            className="flex-1 text-sm outline-none bg-transparent placeholder:text-slate-300 font-medium"
-                          />
-                          {cursoSelectorQuery && (
-                            <button onClick={() => setCursoSelectorQuery('')} className="text-slate-300 hover:text-slate-500">
-                              <X size={13} />
-                            </button>
-                          )}
+                      {!cursoIdSeleccionado && !loadingStatsCurso && (
+                        <div className="flex flex-col items-center justify-center py-10 text-slate-300">
+                          <BookOpen size={36} strokeWidth={1} className="mb-3" />
+                          <p className="text-xs font-bold text-slate-400">Selecciona un curso para ver sus estadísticas</p>
                         </div>
-                        <div className="max-h-52 overflow-y-auto">
-                          {cursos
-                            .filter(c => !cursoSelectorQuery || c.titulo.toLowerCase().includes(cursoSelectorQuery.toLowerCase()))
-                            .map(c => (
-                              <button
-                                key={c.curso_id}
-                                type="button"
-                                onClick={() => {
-                                  setCursoIdSeleccionado(c.curso_id);
-                                  cargarStatsCurso(c.curso_id);
-                                  setCursoSelectorOpen(false);
-                                  setCursoSelectorQuery('');
-                                }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
-                              >
-                                <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0">
-                                  <img src={c.imagenSrc || '/fallback.jpg'} className="w-full h-full object-cover" alt="" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-700 truncate">{c.titulo}</p>
-                                  <p className="text-[9px] text-slate-400 truncate">Por: {c.nombre_creador || 'Sistema'}</p>
-                                </div>
-                              </button>
-                            ))}
-                          {cursos.filter(c => !cursoSelectorQuery || c.titulo.toLowerCase().includes(cursoSelectorQuery.toLowerCase())).length === 0 && (
-                            <p className="text-center text-xs text-slate-400 font-bold py-6">Sin resultados</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
 
-                  {loadingStatsCurso && (
-                    <div className="flex justify-center py-6">
-                      <Loader2 className="animate-spin text-blue-400" size={24} />
-                    </div>
-                  )}
+                      {statsCurso && !loadingStatsCurso && (
+                        <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in duration-200">
+                          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                            <p className="font-black text-slate-900 text-sm">{statsCurso.info?.titulo}</p>
+                            <p className="text-[10px] text-slate-400 font-medium mt-0.5">Por {statsCurso.info?.creador}</p>
+                          </div>
+                          <StatCard icon={<Users size={20} className="text-blue-600"/>} label="Alumnos inscritos" value={statsCurso.inscripciones?.total_inscritos || 0} color="bg-blue-50" sub={`+${statsCurso.inscripciones?.nuevos_mes || 0} este mes`} />
+                          <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Tasa de finalización" value={`${statsCurso.inscripciones?.tasa_completacion || 0}%`} color="bg-green-50" progress={statsCurso.inscripciones?.tasa_completacion || 0} />
+                          <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio en quizzes" value={`${statsCurso.quizzes?.promedio || 0} pts`} color="bg-orange-50" sub={`Mejor: ${statsCurso.quizzes?.mejor || 0} · Peor: ${statsCurso.quizzes?.peor || 0} pts`} />
+                          <StatCard icon={<Eye size={20} className="text-cyan-600"/>} label="Materiales" value={statsCurso.materiales?.total_materiales || 0} color="bg-cyan-50" sub={`${statsCurso.materiales?.alumnos_con_avance || 0} alumnos con avance`} />
 
-                  {!cursoIdSeleccionado && !loadingStatsCurso && (
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-300">
-                      <BookOpen size={36} strokeWidth={1} className="mb-3" />
-                      <p className="text-xs font-bold text-slate-400">Selecciona un curso para ver sus estadísticas</p>
-                    </div>
-                  )}
-
-                  {statsCurso && !loadingStatsCurso && (
-                    <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in duration-200">
-                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                        <p className="font-black text-slate-900 text-sm">{statsCurso.info?.titulo}</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Por {statsCurso.info?.creador}</p>
-                      </div>
-                      <StatCard icon={<Users size={20} className="text-blue-600"/>} label="Alumnos inscritos" value={statsCurso.inscripciones?.total_inscritos || 0} color="bg-blue-50" sub={`+${statsCurso.inscripciones?.nuevos_mes || 0} este mes`} />
-                      <StatCard icon={<CheckCircle size={20} className="text-green-600"/>} label="Tasa de finalización" value={`${statsCurso.inscripciones?.tasa_completacion || 0}%`} color="bg-green-50" progress={statsCurso.inscripciones?.tasa_completacion || 0} />
-                      <StatCard icon={<BarChart3 size={20} className="text-orange-600"/>} label="Promedio en quizzes" value={`${statsCurso.quizzes?.promedio || 0} pts`} color="bg-orange-50" sub={`Mejor: ${statsCurso.quizzes?.mejor || 0} · Peor: ${statsCurso.quizzes?.peor || 0} pts`} />
-                      <StatCard icon={<Eye size={20} className="text-cyan-600"/>} label="Materiales" value={statsCurso.materiales?.total_materiales || 0} color="bg-cyan-50" sub={`${statsCurso.materiales?.alumnos_con_avance || 0} alumnos con avance`} />
-
-                      {statsCurso.secciones?.length > 0 && (
-                        <div className="pt-2 border-t border-slate-100">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Layers size={12} /> Progreso por sección</p>
-                          <div className="space-y-2">
-                            {statsCurso.secciones.map(s => (
-                              <div key={s.seccion_id} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                <div className="flex items-center justify-between mb-1">
-                                  <p className="text-xs font-bold text-slate-700 truncate">{s.titulo}</p>
-                                  <span className="text-[10px] font-black text-slate-400">{s.alumnos_con_avance} alumnos</span>
-                                </div>
-                                <p className="text-[10px] text-slate-400">{s.total_items} items</p>
+                          {statsCurso.secciones?.length > 0 && (
+                            <div className="pt-2 border-t border-slate-100">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Layers size={12} /> Progreso por sección</p>
+                              <div className="space-y-2">
+                                {statsCurso.secciones.map(s => (
+                                  <div key={s.seccion_id} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <p className="text-xs font-bold text-slate-700 truncate">{s.titulo}</p>
+                                      <span className="text-[10px] font-black text-slate-400">{s.alumnos_con_avance} alumnos</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400">{s.total_items} items</p>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                            </div>
+                          )}
 
-                      {statsCurso.topAlumnos?.length > 0 && (
-                        <div className="pt-2 border-t border-slate-100">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Award size={12} /> Alumnos en este curso</p>
-                          <div className="space-y-2">
-                            {statsCurso.topAlumnos.map(u => (
-                              <Link key={u.usuario_id} href={`/perfil/${u.usuario_id}`}
-                                className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
-                                <div className="w-7 h-7 rounded-lg overflow-hidden bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">
-                                  {u.pfp ? <img src={u.pfp} className="w-full h-full object-cover" alt="" /> : u.nombre?.[0]}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-700 truncate group-hover:text-blue-600">{u.alias || u.nombre}</p>
-                                  <p className="text-[9px] text-slate-400">{u.materiales_vistos} materiales vistos</p>
-                                </div>
-                                {u.completado ? <CheckCircle size={14} className="text-emerald-500 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 shrink-0" />}
-                              </Link>
-                            ))}
-                          </div>
+                          {statsCurso.topAlumnos?.length > 0 && (
+                            <div className="pt-2 border-t border-slate-100">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Award size={12} /> Alumnos en este curso</p>
+                              <div className="space-y-2">
+                                {statsCurso.topAlumnos.map(u => (
+                                  <Link key={u.usuario_id} href={`/perfil/${u.usuario_id}`}
+                                    className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all group">
+                                    <div className="w-7 h-7 rounded-lg overflow-hidden bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">
+                                      {u.pfp ? <img src={u.pfp} className="w-full h-full object-cover" alt="" /> : u.nombre?.[0]}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold text-slate-700 truncate group-hover:text-blue-600">{u.alias || u.nombre}</p>
+                                      <p className="text-[9px] text-slate-400">{u.materiales_vistos} materiales vistos</p>
+                                    </div>
+                                    {u.completado ? <CheckCircle size={14} className="text-emerald-500 shrink-0" /> : <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 shrink-0" />}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
+                    </div>
+              </SectionCard>
+
+            </aside>
+          </div>
+        )}
+
+      
+      {activeTab === 'estadisticasAlumnos' && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start m-2">
+            <div className="xl:col-span-1 space-y-10">
+            {/* ── ESTADÍSTICAS DE USUARIOS ── */}
+              <SectionCard title="Estadísticas de Usuarios">
+                <div className="p-6 space-y-5">
+                  {statsUsuarios && (
+                    <div className="space-y-4 animate-in fade-in duration-200">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <TrendingUp size={13} className="text-blue-500" /> Vista General
+                      </p>
+                      <StatCard icon={<Users size={20} className="text-blue-600"/>} label="Total de usuarios" value={statsUsuarios.totalUsuarios} color="bg-blue-50" />
+                      <StatCard icon={<Activity size={20} className="text-emerald-600"/>} label="Nuevos este mes" value={statsUsuarios.usuariosActivos} color="bg-emerald-50" />
+                      <StatCard icon={<BookCheck size={20} className="text-orange-600"/>} label="Sin cursos asignados" value={statsUsuarios.usuariosInactivos} color="bg-orange-50" />
+
+                      <div className="pt-3 border-t border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Distribución por rol</p>
+                        <div className="space-y-2">
+                          {statsUsuarios.distribucionRoles?.map((rol) => (
+                            <div key={rol.rol} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                              <span className="text-xs font-bold text-slate-600">{rol.rol}</span>
+                              <span className="text-xs font-black text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-slate-100">{rol.total}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Actividad en Comunidad</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100">
+                            <p className="text-lg font-black text-blue-600">{statsUsuarios.comunidad?.total_publicaciones || 0}</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase mt-0.5">Posts</p>
+                          </div>
+                          <div className="bg-purple-50 rounded-2xl p-3 text-center border border-purple-100">
+                            <p className="text-lg font-black text-purple-600">{statsUsuarios.comunidad?.total_comentarios || 0}</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase mt-0.5">Comentarios</p>
+                          </div>
+                          <div className="bg-emerald-50 rounded-2xl p-3 text-center border border-emerald-100">
+                            <p className="text-lg font-black text-emerald-600">{statsUsuarios.comunidad?.total_gemas || 0}</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase mt-0.5">Gemas</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                          <Award size={12} /> Top por cursos terminados
+                        </p>
+                        <div className="space-y-2">
+                          {statsUsuarios.topUsuarios?.map((u, i) => (
+                            <Link key={u.usuario_id} href={`/perfil/${u.usuario_id}`}
+                              className="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-blue-50 rounded-xl transition-all group border border-slate-100 hover:border-blue-200">
+                              <span className="text-sm w-5 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}</span>
+                              <div className="w-7 h-7 rounded-xl overflow-hidden bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">
+                                {u.pfp ? <img src={u.pfp} className="w-full h-full object-cover" alt="" /> : u.nombre?.[0]}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-black text-slate-900 truncate group-hover:text-blue-600">{u.alias || u.nombre}</p>
+                                <p className="text-[9px] text-slate-400">{u.cursos_terminados} terminados · {u.promedio_quiz ?? '—'} pts avg</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
-              )}
+              </SectionCard>
             </div>
-          </SectionCard>
-        </div>
-      )}
 
-    {activeTab === 'estadisticasAlumnos' && (
-      <div>
-        {/* ── ESTADÍSTICAS DE USUARIOS ── */}
-          <SectionCard title="Estadísticas de Usuarios">
-            <div className="p-6 space-y-5">
-              <div className="flex gap-2">
-                <button onClick={() => { setSelectedUsuario('global'); setStatsUsuarioIndividual(null); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${selectedUsuario === 'global' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-slate-400'}`}>
-                  Global
-                </button>
-                <button onClick={() => setSelectedUsuario('pick')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${selectedUsuario !== 'global' ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-blue-300'}`}>
-                  Individual
-                </button>
-              </div>
-
-              {selectedUsuario === 'global' && statsUsuarios && (
-                <div className="space-y-4 animate-in fade-in duration-200">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <TrendingUp size={13} className="text-blue-500" /> Vista General
-                  </p>
-                  <StatCard icon={<Users size={20} className="text-blue-600"/>} label="Total de usuarios" value={statsUsuarios.totalUsuarios} color="bg-blue-50" />
-                  <StatCard icon={<Activity size={20} className="text-emerald-600"/>} label="Nuevos este mes" value={statsUsuarios.usuariosActivos} color="bg-emerald-50" />
-                  <StatCard icon={<BookCheck size={20} className="text-orange-600"/>} label="Sin cursos asignados" value={statsUsuarios.usuariosInactivos} color="bg-orange-50" />
-
-                  <div className="pt-3 border-t border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Distribución por rol</p>
-                    <div className="space-y-2">
-                      {statsUsuarios.distribucionRoles?.map((rol) => (
-                        <div key={rol.rol} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                          <span className="text-xs font-bold text-slate-600">{rol.rol}</span>
-                          <span className="text-xs font-black text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-slate-100">{rol.total}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Actividad en Comunidad</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-blue-50 rounded-2xl p-3 text-center border border-blue-100">
-                        <p className="text-lg font-black text-blue-600">{statsUsuarios.comunidad?.total_publicaciones || 0}</p>
-                        <p className="text-[9px] font-black text-slate-400 uppercase mt-0.5">Posts</p>
-                      </div>
-                      <div className="bg-purple-50 rounded-2xl p-3 text-center border border-purple-100">
-                        <p className="text-lg font-black text-purple-600">{statsUsuarios.comunidad?.total_comentarios || 0}</p>
-                        <p className="text-[9px] font-black text-slate-400 uppercase mt-0.5">Comentarios</p>
-                      </div>
-                      <div className="bg-emerald-50 rounded-2xl p-3 text-center border border-emerald-100">
-                        <p className="text-lg font-black text-emerald-600">{statsUsuarios.comunidad?.total_gemas || 0}</p>
-                        <p className="text-[9px] font-black text-slate-400 uppercase mt-0.5">Gemas</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <Award size={12} /> Top por cursos terminados
-                    </p>
-                    <div className="space-y-2">
-                      {statsUsuarios.topUsuarios?.map((u, i) => (
-                        <Link key={u.usuario_id} href={`/perfil/${u.usuario_id}`}
-                          className="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-blue-50 rounded-xl transition-all group border border-slate-100 hover:border-blue-200">
-                          <span className="text-sm w-5 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}</span>
-                          <div className="w-7 h-7 rounded-xl overflow-hidden bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xs shrink-0">
-                            {u.pfp ? <img src={u.pfp} className="w-full h-full object-cover" alt="" /> : u.nombre?.[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-slate-900 truncate group-hover:text-blue-600">{u.alias || u.nombre}</p>
-                            <p className="text-[9px] text-slate-400">{u.cursos_terminados} terminados · {u.promedio_quiz ?? '—'} pts avg</p>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedUsuario !== 'global' && (
-                <div className="space-y-4 animate-in fade-in duration-200">
+            <aside className="xl:col-span-1 space-y-6 lg:sticky lg:top-10">
+              <SectionCard title="Estadísticas por alumno">
+                <div className="space-y-4 animate-in fade-in duration-200 m-6 min-h-[512px]">
                   {/* Selector popup */}
                   <div className="relative" ref={selectorRef}>
                     {/* Chip cuando hay alumno seleccionado */}
@@ -803,11 +792,13 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          </SectionCard>
+              
+              </SectionCard>
+            </aside>
+        </div>
+      )}
+
       </div>
-    )}
     </div>
   );
 }

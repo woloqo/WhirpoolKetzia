@@ -32,13 +32,13 @@ export const SectionCard = ({
         Esto elimina automáticamente el separador (border-b) si no hay título.
       */}
       {title && (
-        <div className={`pl-6 pr-4 py-4 border-b flex justify-between items-center ${style.header}`}>
-          <h2 className={`text-xl font-black flex items-center gap-2 ${style.title}`}>
+        <div className={`p-4 border-b flex justify-between items-center ${style.header}`}>
+          <h2 className={`text-xs md:text-xl font-black flex items-center gap-2 ${style.title}`}>
             {title}
             {count !== undefined && (
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${style.badge}`}>
-                {count}
-              </span>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${style.badge}`}>
+                  {count}
+                </span>
             )}
           </h2>
           {action}

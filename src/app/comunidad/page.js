@@ -24,8 +24,6 @@ function GemaCardInline({ gema, colorIndex = 0 }) {
   return (
     <div className="mt-3 rounded-2xl overflow-hidden border border-slate-100">
       <div className={`bg-gradient-to-br ${color} px-4 py-2 flex items-center gap-2`}>
-        <Gem size={14} className="text-white opacity-90" />
-        <span className="text-[9px] font-black uppercase tracking-widest text-white/80">Gema compartida</span>
       </div>
       <div className="px-4 py-3 bg-white">
         <p className="text-xs font-black text-slate-800 mb-0.5">{gema.titulo}</p>

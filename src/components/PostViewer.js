@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   X, Heart, MessageSquare, Send, ChevronLeft, ChevronRight,
-  Trash2, Pencil, Check, MoreHorizontal, Loader2, Gem
+  Trash2, Pencil, Check, MoreHorizontal, Loader2, Gem, Tag
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -201,12 +201,41 @@ export default function PostViewer({
   const miPfp = typeof window !== 'undefined' ? localStorage.getItem('usuario_pfp') : null;
   const miNombre = typeof window !== 'undefined' ? localStorage.getItem('nombre_usuario') : '?';
 
-  /* ─────────────────────────────────────────────────────────
-     PANEL DE COMENTARIOS
-     Rendered as a JSX variable (NOT a sub-component) so the
-     <input> is never re-mounted on state changes, preventing
-     the focus-loss-on-keystroke bug.
-  ───────────────────────────────────────────────────────── */
+  const COLORES_GEMA = [
+    'from-blue-500 to-blue-600',
+    'from-purple-500 to-purple-600',
+    'from-emerald-500 to-emerald-600',
+    'from-orange-500 to-orange-600',
+    'from-pink-500 to-pink-600',
+    'from-cyan-500 to-cyan-600',
+  ];
+
+  function GemaCardInline({ gema, colorIndex = 0 }) {
+    const color = COLORES_GEMA[colorIndex % COLORES_GEMA.length];
+    return (
+      <div className="mt-3 rounded-2xl overflow-hidden border border-slate-100">
+        <div className={`bg-gradient-to-br ${color} px-4 py-2 flex items-center gap-2`}>
+        </div>
+        <div className="px-4 py-3 bg-white">
+          <p className="text-xs font-black text-slate-800 mb-0.5">{gema.titulo}</p>
+          {gema.descripcion && (
+            <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{gema.descripcion}</p>
+          )}
+          {gema.categorias?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {gema.categorias.map(cat => (
+                <span key={cat.categoria_id}
+                  className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded-full uppercase tracking-wide border border-blue-100/50">
+                  <Tag size={8} /> {cat.nombre}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const commentsPanel = (
     <div className="flex flex-col h-full overflow-hidden">
 
@@ -294,18 +323,7 @@ export default function PostViewer({
           <div>
             {post.titulo && <p className="font-black text-slate-900 text-sm mb-1 leading-tight">{post.titulo}</p>}
             {post.contenido && <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{post.contenido}</p>}
-            {post.gema && (
-              <div className="mt-3 flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                  <Gem size={14} className="text-blue-600" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black uppercase text-blue-400 leading-none mb-0.5">Gema compartida</p>
-                  <p className="text-xs font-bold text-slate-800 truncate">{post.gema.titulo}</p>
-                  {post.gema.descripcion && <p className="text-[10px] text-slate-400 truncate">{post.gema.descripcion}</p>}
-                </div>
-              </div>
-            )}
+            {post.gema && (<GemaCardInline gema={post.gema} colorIndex={post.publicacion_id % COLORES_GEMA.length} /> )}
           </div>
         )}
       </div>

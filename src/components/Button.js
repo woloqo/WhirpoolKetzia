@@ -13,7 +13,7 @@ export const Button = ({
 }) => {
   // Ajustamos padding: px-4 en móvil, px-6 en desktop
   // Ajustamos texto: text-xs en móvil, text-sm en desktop
-  const baseStyles = "px-4 md:px-6 py-2.5 md:py-3 rounded-[0.5rem] font-black flex items-center justify-center gap-2 transition-all active:scale-95 text-xs md:text-sm";
+  const baseStyles = "p-2 md:px-6  md:py-3 rounded-[0.5rem] font-black flex items-center justify-center gap-2 transition-all active:scale-95 text-xs md:text-sm";
   
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 shadow-lg md:shadow-xl",
