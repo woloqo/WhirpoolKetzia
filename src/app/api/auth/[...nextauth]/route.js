@@ -44,6 +44,37 @@ const actualizarRacha = async (usuario_id) => {
 export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
+
+  useSecureCookies: true,
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+      },
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+      },
+    },
+    csrfToken: {
+      name: `__Host-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+      },
+    },
+  },
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -57,30 +88,40 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const [rows] = await pool.query(
-          "SELECT * FROM Usuarios WHERE email = ?",
-          [credentials.email]
-        );
-        const user = rows[0];
-        
-        if (!user) return null;
+        try {
+          console.log("Intentando login con:", credentials?.email);
+          
+          const [rows] = await pool.query(
+            "SELECT * FROM Usuarios WHERE email = ?",
+            [credentials.email]
+          );
+          const user = rows[0];
 
-        const isMatch = await bcrypt.compare(
-          credentials.password,
-          user.password_hash
-        );
-        
-        if (!isMatch) return null;
+          console.log("Usuario encontrado:", !!user);
 
-        // Retornamos el objeto con los datos que necesitamos en el token
-        return {
-          id: user.usuario_id.toString(),
-          name: user.nombre,
-          email: user.email,
-          usuario_id: user.usuario_id,
-          rol_id: user.rol_id,
-          pfp: user.pfp,
-        };
+          if (!user) return null;
+
+          const isMatch = await bcrypt.compare(
+            credentials.password,
+            user.password_hash
+          );
+
+          console.log("Password match:", isMatch);
+
+          if (!isMatch) return null;
+
+          return {
+            id: user.usuario_id.toString(),
+            name: user.nombre,
+            email: user.email,
+            usuario_id: user.usuario_id,
+            rol_id: user.rol_id,
+            pfp: user.pfp,
+          };
+        } catch (error) {
+          console.error("Error en authorize:", error);
+          return null;
+        }
       },
     }),
   ],

@@ -33,16 +33,25 @@ export default function LoginPage() {
     const result = await signIn("credentials", {
       email,
       password,
-      redirect: false, // Manejamos la redirección manualmente
+      redirect: false,
     });
 
+    console.log("Resultado signIn:", result);
+
     if (result?.error) {
+      // result.error puede ser "CredentialsSignin" en producción
+      // en lugar del mensaje real
       setError("Credenciales inválidas");
       setLoading(false);
       return;
     }
-    router.push("/");
-    router.refresh();
+
+    if (result?.ok) {
+      router.push("/");
+      router.refresh();
+    }
+    
+    setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
