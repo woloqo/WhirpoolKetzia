@@ -305,7 +305,7 @@ export default function ChatBot() {
               <div className="flex items-center gap-1.5 mb-2">
                 <Database size={10} className="text-emerald-500" />
                 <p className="text-[10px] font-bold text-emerald-600">
-                  Consultaré los datos de la platagforma para responder esa pregunta.
+                  Consultaré los datos de la plataforma para responder esa pregunta.
                 </p>
               </div>
             )}
