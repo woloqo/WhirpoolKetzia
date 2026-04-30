@@ -28,9 +28,7 @@ export async function GET() {
       LEFT JOIN Usuarios u ON c.creado_por = u.usuario_id
       ORDER BY c.fecha_creacion DESC
     `);
-
-    // Si un curso no tiene categorías, GROUP_CONCAT devuelve NULL. 
-    // Podrías manejarlo aquí o dejarlo así para que el front use el fallback.
+  
     return NextResponse.json(rows);
   } catch (error) {
     console.error("Error en API Admin Dashboard:", error);

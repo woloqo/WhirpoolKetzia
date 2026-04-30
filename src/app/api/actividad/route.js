@@ -4,16 +4,13 @@ import { NextResponse } from 'next/server';
 export async function POST(request) {
   try {
     const { usuario_id } = await request.json();
-    console.log('🏓 PING de actividad recibido para usuario:', usuario_id);
     if (!usuario_id) return NextResponse.json({ error: 'Falta usuario_id' }, { status: 400 });
 
     const hoy = new Date().toISOString().split('T')[0];
-    console.log('📅 Hoy es:', hoy);
     const [rows] = await pool.query(
       'SELECT racha_actual, mejor_racha, ultima_racha_fecha FROM Usuarios WHERE usuario_id = ?',
       [usuario_id]
     );
-    console.log('📊 Datos actuales del usuario:', rows[0]);
     const u = rows[0];
     if (!u) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 

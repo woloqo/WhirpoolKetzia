@@ -5,8 +5,6 @@ export async function GET(request, { params }) {
   const { id } = await params; 
 
   try {
-    // CORRECCIÓN: Ahora unimos Archivos_Curso con Archivos (datos físicos) 
-    // y con Cursos (para el título del curso)
     const [rows] = await pool.query(`
       SELECT 
         a.archivo_id,
@@ -24,8 +22,6 @@ export async function GET(request, { params }) {
     `, [id]);
 
     if (rows && rows.length > 0) {
-      // No hace falta el JSON.parse(JSON.stringify()) con mysql2, 
-      // pero lo mantenemos si prefieres asegurar la limpieza de objetos
       return NextResponse.json(rows[0]);
     }
 

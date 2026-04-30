@@ -11,7 +11,6 @@ export async function GET(request) {
 
   try {
     if (usuarioId) {
-      // ── STATS INDIVIDUALES ──────────────────────────────────────────────
       const [
         [infoUsuario],
         [cursosInscritos],

@@ -19,7 +19,7 @@ export async function POST(request) {
       quizzesSeleccionados, 
       creado_por, 
       alumnosSeleccionados,
-      categoriasSeleccionadas // <--- Capturamos las categorías del body
+      categoriasSeleccionadas
     } = body;
 
     if (!titulo || !creado_por) {

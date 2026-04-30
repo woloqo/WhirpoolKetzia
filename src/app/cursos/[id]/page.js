@@ -84,9 +84,6 @@ export default function CursoDetalle(props) {
     const isQuiz = item.tipo === 'quiz';
     const completado = item.completado > 0;
 
-    console.log('SECCIONES:', secciones);
-console.log('ITEMS:', items.map(i => ({ titulo: i.titulo, tipo: i.tipo, seccion_id: i.seccion_id })));
-
     return (
       <div key={`${item.tipo}-${item.id_contenido}`}
         className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
@@ -115,7 +112,10 @@ console.log('ITEMS:', items.map(i => ({ titulo: i.titulo, tipo: i.tipo, seccion_
           </div>
         ) : completado ? (
           <div className="bg-emerald-100 text-emerald-600 p-2 rounded-xl shrink-0">
-            <CheckCircle2 size={18} />
+            <Link href={`/cursos/${id}/visor/${item.id_contenido}`}
+              className="">
+              <CheckCircle2 size={18} />
+            </Link>
           </div>
         ) : isQuiz ? (
           <Button href={`/cursos/${id}/quiz/${item.id_contenido}`} variant="dark" className="h-9 px-4 text-xs shadow-none shrink-0">
