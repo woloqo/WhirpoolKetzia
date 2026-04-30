@@ -54,6 +54,23 @@ La plataforma incluye un **chatbot con IA (Gemini)** con contexto personalizado 
 - **Gestión de categorías**: crear, editar, eliminar categorías para cursos y gemas
 ---
 
+## Características Técnicas Adicionales
+
+### Seguimiento de rachas de actividad
+El sistema calcula rachas diarias de acceso. Al hacer login (email o Google) y mediante pings periódicos del Sidebar (cada 3 min), se actualiza `ultima_actividad` y se evalúa si el día anterior también hubo actividad para incrementar o resetear `racha_actual`.
+
+### Scroll infinito en Comunidad
+La página de comunidad usa `IntersectionObserver` en el scroll para detectar cuando el usuario llega al final y cargar más publicaciones automáticamente en lotes de 5.
+
+### Visor de materiales con detección de completado
+- **YouTube**: se marca como completado al cargar el embed.
+- **PDFs/Google Drive**: se usa `IntersectionObserver` sobre un elemento invisible al final del iframe para detectar cuando el usuario llegó al final del documento.
+
+### Cache RAG en el chatbot
+El contexto de datos personales para el chatbot se cachea en un `ref` de React durante 10 minutos (`RAG_TTL`), evitando llamadas redundantes a la BD en conversaciones largas.
+
+---
+
 ## Tecnologías Utilizadas
 
 | Tecnología | Versión | Uso en el Proyecto |
@@ -195,48 +212,76 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ## Instalación Local
 
-### Prerrequisitos
-- Node.js 18+
-- npm
-- Acceso a una base de datos MySQL/TiDB con el esquema cargado
-- Cuenta en Supabase (plan gratuito suficiente)
-- Cuenta en Google Cloud Console para OAuth
-- API Key de Google Gemini con Google Cloud.
-
-### Pasos
-
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/tu-org/whirlpool-learning.git
+### Clonar el repositorio
+```bash 
+git clone https://github.com/woloqo/WhirpoolKetzia
 cd whirlpool-learning
-
-# 2. Instalar dependencias
+```
+### Instalar dependencias
+```bash 
 npm install
+```
 
-# 3. Configurar variables de entorno
+
+### Configurar variables de entorno
+```bash 
 cp .env.example .env.local
-# Editar .env.local con tus credenciales
+```
 
-# 4. Inicializar la base de datos
-# Ejecuta el esquema SQL en tu instancia MySQL/TiDB
-# (ver sección Esquema de Base de Datos)
+### Inicializar la base de datos
+Ejecuta el esquema SQL en tu instancia MySQL/TiDB
 
-# 5. Configurar Supabase Storage
-# Crea tres buckets en tu proyecto Supabase:
-# - material    (público)
-# - publicaciones (público)
-# - pfps        (público)
+### Configurar Supabase Storage
+- Crea tres buckets en tu proyecto Supabase:
+- material (público)
+- publicaciones (público)
+- pfps (público)
 
-# 6. Configurar Google OAuth
-# En Google Cloud Console:
-# - Crear un proyecto
-# - Habilitar Google+ API
-# - Crear credenciales OAuth 2.0
-# - Agregar http://localhost:3000/api/auth/callback/google como Redirect URI
+### Configurar Google OAuth
+- En Google Cloud Console:
+- Crear un proyecto
+- Habilitar Google+ API
+- Crear credenciales OAuth 2.0
+- Agregar URL_DEL_PROYECTO/api/auth/callback/google como Redirect URI
 
-# 7. Ejecutar en modo desarrollo
+### Ejecutar en modo desarrollo
+```bash 
 npm run dev
 ```
+
+Despliegue con Dokploy para servidores Ubutu
+### Instalar y configurar dokploy
+```bash 
+curl -sSL https://dokploy.com/install.sh | sh
+```
+- Crear nuevo proyecto en el dashboard de dokploy
+- Dar nombre y descripción al proyecto
+- Crear un nuevo servicio dentro del proyecto
+- Elegir aplicación como tipo de servicio
+- Dar nombre y descripción al servicio
+
+### Seleccionar el proveedor
+Seleccionar git como proveedor
+- Repostitory url: https://github.com/woloqo/WhirpoolKetzia
+- Branch: main
+- Watch paths: src/**
+
+### Inicializar la base de datos
+Ejecuta el esquema SQL en tu instancia MySQL/TiDB
+
+### Configurar Supabase Storage
+- Crea tres buckets en tu proyecto Supabase:
+material (público)
+publicaciones (público)
+pfps (público)
+
+### Configurar Google OAuth
+En Google Cloud Console:
+- Crear un proyecto
+- Habilitar Google+ API
+- Crear credenciales OAuth 2.0
+- Agregar URL_DEL_PROYECTO/api/auth/callback/google como Redirect URI
+- Configurar environment variables
 ---
 
 ## Esquema de Base de Datos
@@ -711,21 +756,3 @@ Envía emails masivos a todos los alumnos con cursos sin avance en los últimos 
 |---|---|---|
 | `1` | Administrador | Panel admin completo, gestión de cursos/materiales/exámenes/alumnos/estadísticas, acceso a todo lo del empleado |
 | `2` | Empleado | Dashboard personal, cursos inscritos, perfil, gemas, comunidad, chatbot |
----
-
-## Características Técnicas Adicionales
-
-### Seguimiento de rachas de actividad
-El sistema calcula rachas diarias de acceso. Al hacer login (email o Google) y mediante pings periódicos del Sidebar (cada 3 min), se actualiza `ultima_actividad` y se evalúa si el día anterior también hubo actividad para incrementar o resetear `racha_actual`.
-
-### Scroll infinito en Comunidad
-La página de comunidad usa `IntersectionObserver` en el scroll para detectar cuando el usuario llega al final y cargar más publicaciones automáticamente en lotes de 5.
-
-### Visor de materiales con detección de completado
-- **YouTube**: se marca como completado al cargar el embed.
-- **PDFs/Google Drive**: se usa `IntersectionObserver` sobre un elemento invisible al final del iframe para detectar cuando el usuario llegó al final del documento.
-
-### Cache RAG en el chatbot
-El contexto de datos personales para el chatbot se cachea en un `ref` de React durante 10 minutos (`RAG_TTL`), evitando llamadas redundantes a la BD en conversaciones largas.
-
----
