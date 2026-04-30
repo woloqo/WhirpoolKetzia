@@ -266,8 +266,8 @@ export default function AdminDashboard() {
                           <td className="px-6 py-5 text-right">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                             <div className="flex items-center col-1 justify-end gap-2">
-                              <a href={`/admin/gestionar/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><UserRoundPlus size={18} /></a>
-                              <a href={`/admin/editar-curso/${curso.curso_id}`} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><PenLine size={18} /></a>
+                              <a href={`/admin/gestionar/${curso.curso_id}`} className="p-2 text-slate-300 hover:text-blue-600"><UserRoundPlus size={18} /></a>
+                              <a href={`/admin/editar-curso/${curso.curso_id}`} className="p-2 text-slate-300 hover:text-blue-600"><PenLine size={18} /></a>
                               {rolId === 1 && <button onClick={() => eliminarCurso(curso.curso_id, curso.titulo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
                             </div>
                           </td>
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-5 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <a href={m.url_archivo} target="_blank" className="p-2 text-slate-300 hover:text-blue-600"><Eye size={18} /></a>
+                              <a href={m.url_archivo} className="p-2 text-slate-300 hover:text-blue-600"><Eye size={18} /></a>
                               {rolId === 1 && <button onClick={() => eliminarMaterial(m.archivo_id, m.nombre_archivo)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>}
                             </div>
                           </td>
