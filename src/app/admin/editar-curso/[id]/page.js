@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Trash2, Loader2, BookOpen, FileText, HelpCircle, Plus, X, Pencil, Layers, Tag } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Loader2, BookOpen, FileText, HelpCircle, Plus, X, Pencil, Layers, Tag, ChevronUp, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
 
@@ -145,6 +145,36 @@ export default function EditarCurso({ params }) {
     else setExamenes(examenes.filter((_, i) => i !== item._globalIndex));
   };
 
+  const moverItem = (item, dir) => {
+    // Trabajamos sobre la lista combinada ordenada
+    const lista = [
+      ...materiales.map((m, i) => ({ ...m, _tipo: 'material', _globalIndex: i })),
+      ...examenes.map((ex, i) => ({ ...ex, _tipo: 'examen', _globalIndex: i })),
+    ].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+
+    const idx = lista.findIndex(
+      i => i._tipo === item._tipo && i._globalIndex === item._globalIndex
+    );
+    const swap = idx + dir;
+    if (swap < 0 || swap >= lista.length) return;
+
+    // Intercambiar órdenes
+    const ordenA = lista[idx].orden ?? idx + 1;
+    const ordenB = lista[swap].orden ?? swap + 1;
+    lista[idx] = { ...lista[idx], orden: ordenB };
+    lista[swap] = { ...lista[swap], orden: ordenA };
+
+    // Redistribuir de vuelta a materiales y examenes
+    const nuevosMateriales = [...materiales];
+    const nuevosExamenes = [...examenes];
+    lista.forEach(i => {
+      if (i._tipo === 'material') nuevosMateriales[i._globalIndex] = { ...nuevosMateriales[i._globalIndex], orden: i.orden };
+      else nuevosExamenes[i._globalIndex] = { ...nuevosExamenes[i._globalIndex], orden: i.orden };
+    });
+    setMateriales(nuevosMateriales);
+    setExamenes(nuevosExamenes);
+  };
+
   const cambiarSeccionItem = (item, seccion_id) => {
     if (item._tipo === 'material') {
       const nuevos = [...materiales];
@@ -202,12 +232,14 @@ export default function EditarCurso({ params }) {
           });
         }
       }
-      const materialesConId = materiales.filter(m => m.relacion_id);
-      if (materialesConId.length > 0) {
-        await fetch(`/api/admin/cursos/${cursoId}/materiales`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ materiales: materialesConId.map((m, i) => ({ relacion_id: m.relacion_id, orden: i + 1, seccion_id: m.seccion_id || null })) }),
-        });
+      const materialesConId = materiales
+        .filter(m => m.relacion_id)
+        .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+        if (materialesConId.length > 0) {
+          await fetch(`/api/admin/cursos/${cursoId}/materiales`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ materiales: materialesConId.map((m, i) => ({ relacion_id: m.relacion_id, orden: i + 1, seccion_id: m.seccion_id || null })) }),
+          });
       }
 
       // Sincronizar exámenes
@@ -226,7 +258,9 @@ export default function EditarCurso({ params }) {
           });
         }
       }
-      const examenesConId = examenes.filter(ex => ex.quiz_curso_id);
+      const examenesConId = examenes
+        .filter(ex => ex.quiz_curso_id)
+        .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
       if (examenesConId.length > 0) {
         await fetch(`/api/admin/cursos/${cursoId}/examenes`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -460,11 +494,25 @@ export default function EditarCurso({ params }) {
               </div>
             ) : (
               <div className="space-y-2">
-                {itemsFiltrados.map((item) => {
+                {itemsFiltrados.map((item, filtIndex) => {
                   const isMaterial = item._tipo === 'material';
+                  const totalFiltrados = itemsFiltrados.length;
                   return (
                     <div key={`${item._tipo}-${item._globalIndex}`}
                       className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                      
+                      {/* Flechitas */}
+                      <div className="flex flex-col gap-0.5 shrink-0">
+                        <button type="button" onClick={() => moverItem(item, -1)} disabled={filtIndex === 0}
+                          className="p-1 text-slate-200 hover:text-blue-500 disabled:opacity-0 transition-colors">
+                          <ChevronUp size={14} />
+                        </button>
+                        <button type="button" onClick={() => moverItem(item, 1)} disabled={filtIndex === totalFiltrados - 1}
+                          className="p-1 text-slate-200 hover:text-blue-500 disabled:opacity-0 transition-colors">
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+
                       <div className={`p-2 rounded-xl shrink-0 ${isMaterial ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'}`}>
                         {isMaterial ? <FileText size={15} /> : <HelpCircle size={15} />}
                       </div>
